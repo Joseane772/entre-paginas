@@ -1,0 +1,20 @@
+É uma boa ideia, e o ângulo que a diferencia é o mais interessante: o livro como ponto central, ligado a tudo o que o rodeia (saga, adaptações, edições, traduções, comunidade). Goodreads, StoryGraph e Hardcover já existem, mas nenhum junta bem livros e adaptações. Quem vê um filme e quer ler o livro, ou lê o livro e quer saber se a série vale a pena, ainda tem de andar por vários sites.
+
+A página de cada livro
+
+Informação base (sinopse, autor, ano) e a ordem de leitura da saga, com indicação de qual é o primeiro livro
+Adaptações (filmes, séries, anime, BD) com um comparativo do tipo "fiel ao livro?"
+Onde comprar (lojas online, livrarias locais, biblioteca, audiolivro) e em que línguas existe, incluindo português de Portugal e do Brasil
+Discussão por livro, com opção de esconder spoilers por capítulo
+
+Comunidade
+
+Fóruns ou clubes de leitura por livro, saga ou género
+Estado de leitura (quero ler, a ler, li) e avaliações
+Recomendações baseadas no que já leste e no que leitores com gostos parecidos leram
+
+Onde ir buscar os dados, para não começares do zero:
+
+Open Library e Google Books API para livros, edições e línguas
+TMDB para filmes e séries
+Wikidata para ligar livros, sagas e adaptações
