@@ -94,7 +94,11 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        before: async (u) => ({ data: { ...u, role: await roleForNewUser(u.email) } }),
+        // An admin adding a reader on /admin/utilizadores may give the admin role; public
+        // sign-ups can't send a role (the admin plugin marks it input: false).
+        before: async (u) => ({
+          data: { ...u, role: (u as { role?: string }).role === "admin" ? "admin" : await roleForNewUser(u.email) },
+        }),
       },
     },
   },

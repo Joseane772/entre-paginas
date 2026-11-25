@@ -1,7 +1,7 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { updateTag } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { seriesWorks, workOverrides, works } from "@/db/schema";
@@ -85,6 +85,33 @@ export async function reimport(workId: number): Promise<AdminResult> {
 }
 
 /** Promote/demote and suspend/restore accounts (Better Auth admin plugin). */
+const CREATE_ERRORS: Record<string, string> = {
+  USER_ALREADY_EXISTS: "Já existe uma conta com este email.",
+  USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: "Já existe uma conta com este email.",
+  INVALID_EMAIL: "Este email não parece válido.",
+  PASSWORD_TOO_SHORT: "A palavra-passe tem de ter pelo menos 8 caracteres.",
+};
+
+/** Add a reader by hand (name, email, first password). They can change the password in /conta. */
+export async function createReader(_prev: AdminResult, f: FormData): Promise<AdminResult> {
+  const s = await admin();
+  if (!s) return { error: "Só administradores." };
+  const name = field(f, "name");
+  const email = field(f, "email")?.toLowerCase();
+  const password = String(f.get("password") ?? "");
+  const role = f.get("role") === "admin" ? "admin" : "user";
+  if (!name || !email) return { error: "Preenche o nome e o email." };
+  if (password.length < 8) return { error: CREATE_ERRORS.PASSWORD_TOO_SHORT };
+  try {
+    await auth.api.createUser({ body: { name, email, password, role }, headers: await headers() });
+  } catch (e) {
+    const code = (e as { body?: { code?: string } }).body?.code;
+    return { error: (code && CREATE_ERRORS[code]) || (e instanceof Error ? e.message : "Falhou.") };
+  }
+  refresh();
+  return { ok: `Conta criada para ${email}. Dá-lhe a palavra-passe; pode mudá-la em «A minha conta».` };
+}
+
 export async function manageUser(_prev: AdminResult, f: FormData): Promise<AdminResult> {
   const s = await admin();
   if (!s) return { error: "Só administradores." };
@@ -102,5 +129,6 @@ export async function manageUser(_prev: AdminResult, f: FormData): Promise<Admin
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Falhou." };
   }
+  refresh();
   return { ok: "Feito." };
 }
