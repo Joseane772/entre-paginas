@@ -19,7 +19,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pt-PT" className={`${sans.variable} ${display.variable}`}>
+    // suppressHydrationWarning: browser extensions (themes, scrollbar tweaks) add attributes such as
+    // style="transition-property: none" to <html> before React loads. Only this element's own
+    // attributes are exempt; mismatches inside the page are still reported.
+    <html lang="pt-PT" className={`${sans.variable} ${display.variable}`} suppressHydrationWarning>
       <body>
         <header className="site-header">
           <div className="wrap site-header-inner">
