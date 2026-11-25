@@ -14,13 +14,19 @@
 - [ ] Background refresh job (re-import stale books weekly)
 - [ ] Transparent/SVG logo for dark mode
 
-## Milestone 2: accounts and reading status
+## Milestone 2: accounts and reading status (in progress)
 
-- Auth (Auth.js or Better Auth; email magic link + Google)
-- `users`, `reading_status` (quero ler / a ler / li, with dates), `ratings` (1–5 + review)
-- Protect and rate-limit on-demand imports (currently open to anyone)
-- Admin screen for curation (writes the same overrides as `src/data/curation.ts`, stored in the DB)
-- Community-added books (`works.status = 'pending'`) with a review queue
+- [x] Auth with Better Auth: email + password, Google (optional), password reset by email,
+      rate-limited auth endpoints, admin role and suspensions
+- [x] `reading_status` (quero ler / a ler / li, with dates), `reviews` (1–5 + text, spoiler flag)
+- [x] A minha estante, account page (name, password, data export, delete account)
+- [x] Imports for signed-in readers only, limited per hour (`import_events`)
+- [x] Admin: overview, users, per-book corrections (`work_overrides`) and re-import
+- [ ] Email verification (needs a real SMTP provider in production)
+- [ ] Public reader profiles and following other readers
+- [ ] Community-added books (`works.status = 'pending'`) with a review queue, for books Open
+      Library doesn't have (the prototype's "add a book" form)
+- [ ] Reporting reviews; moderation queue
 
 ## Milestone 3: community
 

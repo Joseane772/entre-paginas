@@ -5,6 +5,7 @@ import { cacheLife } from "next/cache";
 import { BookGrid } from "@/components/BookGrid";
 import { Cover } from "@/components/Cover";
 import { ImportButton } from "@/components/ImportButton";
+import { getSession } from "@/lib/session";
 import { SearchBox } from "@/components/SearchBox";
 import { searchCatalogue } from "@/lib/data/catalogue";
 import { findImported } from "@/lib/import/importWork";
@@ -64,7 +65,7 @@ async function OpenLibraryResults({ q }: { q: string }) {
     return <p className="sub">O Open Library não respondeu. Tenta novamente daqui a pouco.</p>;
   }
   if (!docs.length) return <p className="sub">Sem resultados no Open Library.</p>;
-  const imported = await findImported(docs.map((d) => olId(d.key)));
+  const [imported, session] = await Promise.all([findImported(docs.map((d) => olId(d.key))), getSession()]);
 
   return (
     <ul className="result-list panel">
@@ -87,8 +88,12 @@ async function OpenLibraryResults({ q }: { q: string }) {
               <Link className="btn" href={`/livro/${slug}`}>
                 Abrir
               </Link>
-            ) : (
+            ) : session ? (
               <ImportButton ol={id} />
+            ) : (
+              <Link className="btn" href={`/entrar?voltar=${encodeURIComponent(`/pesquisa?q=${encodeURIComponent(q)}`)}`}>
+                Entrar para importar
+              </Link>
             )}
           </li>
         );

@@ -17,7 +17,8 @@ import { getTmdbDetails } from "@/lib/sources/tmdb";
 import { getPtSummary } from "@/lib/sources/wikipedia";
 import { searchPortugueseVolumes } from "@/lib/sources/googlebooks";
 import { SourceError } from "@/lib/sources/http";
-import { curatedSeriesName, curatedWork, hiddenQids } from "@/data/curation";
+import { curatedSeriesName } from "@/data/curation";
+import { hiddenQids, loadCuration } from "./curation";
 import { cleanEditionTitle, normalize, portugueseRegion, slugify, toIso3 } from "@/lib/text";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -158,7 +159,9 @@ export async function importWork(input: ImportInput, log: Log = () => {}): Promi
     return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
   };
 
-  const curated = curatedWork(qid);
+  const curation = await loadCuration(db, [qid ?? "", ...seriesMembers.flat().map((m) => m.qid)], olWorkId);
+  const curatedWork = (q?: string | null) => curation(q);
+  const curated = curation(qid, olWorkId);
   const originalTitle = curated.originalTitle ?? wdWork?.originalTitle ?? olWork?.title ?? wdWork?.labelEn ?? null;
   // Wikidata's "pt" label is often just the original title copied over ("Dune");
   // only trust it when it differs, otherwise prefer what Portuguese editions/Wikipédia call it.
@@ -195,6 +198,7 @@ export async function importWork(input: ImportInput, log: Log = () => {}): Promi
 
   // 3. Write ------------------------------------------------------------------
   return db.transaction(async (tx) => {
+    const hidden = await hiddenQids(tx);
     const workId = await upsertWork(tx, {
       qid: qid ?? undefined,
       olWorkId,
@@ -306,7 +310,7 @@ export async function importWork(input: ImportInput, log: Log = () => {}): Promi
             tx
               .select({ id: works.id })
               .from(works)
-              .where(or(eq(works.status, "stub"), inArray(works.wikidataId, hiddenQids()))),
+              .where(or(eq(works.status, "stub"), inArray(works.wikidataId, hidden.length ? hidden : ["-"]))),
           ),
         ),
       );

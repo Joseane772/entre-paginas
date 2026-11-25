@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Figtree, Young_Serif } from "next/font/google";
+import { Suspense } from "react";
+import { UserNav } from "@/components/auth/UserNav";
 import "./globals.css";
 
 const sans = Figtree({ variable: "--font-sans", subsets: ["latin"], weight: ["400", "500", "600"] });
@@ -24,6 +26,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <nav aria-label="Principal">
               <Link href="/pesquisa">Pesquisar</Link>
               <Link href="/bookbox">BookBox</Link>
+              <Suspense fallback={<Link href="/entrar">Entrar</Link>}>
+                <UserNav />
+              </Suspense>
             </nav>
           </div>
         </header>

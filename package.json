@@ -14,14 +14,18 @@
     "db:studio": "drizzle-kit studio",
     "import": "tsx --env-file=.env scripts/import.ts",
     "seed": "tsx --env-file=.env scripts/import.ts --seed",
-    "curate": "tsx --env-file=.env scripts/curate.ts"
+    "curate": "tsx --env-file=.env scripts/curate.ts",
+    "make-admin": "tsx --env-file=.env scripts/make-admin.ts"
   },
   "dependencies": {
+    "better-auth": "1.7.20",
     "drizzle-orm": "^0.45.4",
     "next": "16.4.6",
+    "nodemailer": "10.3.1",
     "postgres": "^4.1.1",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "server-only": "0.0.1"
   },
   "devDependencies": {
     "@types/node": "^20",

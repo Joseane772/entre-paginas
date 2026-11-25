@@ -39,6 +39,27 @@ npm run import -- "the last wish" --series          # also fully import the rest
 From the site, searching shows Open Library results with an **Importar** button. Imports are
 idempotent: re-running one refreshes the same rows.
 
+## Accounts
+
+Sign-in uses [Better Auth](https://www.better-auth.com) with email + password, plus Google when
+`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` are set. Readers can:
+
+- mark books as **Quero ler / A ler / Li** (dates fill in on their own) and see them on
+  **A minha estante** (`/estante`);
+- rate 1–5 and write a review, with a "tem spoilers" option that hides the text behind a click;
+- import books from Open Library (signed-in only, `IMPORTS_PER_HOUR` per reader, default 10);
+- change name and password, download their data as JSON, and delete their account (`/conta`).
+
+**Admins** get `/admin`: an overview, the user list (promote, suspend), and a correction editor per
+book (title, original title, synopsis, note, "not a book of this series") with a re-import button.
+Corrections made there are stored in `work_overrides` and win over `src/data/curation.ts`.
+Whoever is listed in `ADMIN_EMAILS` becomes admin on sign-up; if it's empty, the first account
+does. `npm run make-admin -- email` promotes an existing account.
+
+Password-reset emails go through `SMTP_URL`. Without it, the link is printed in the server log.
+Sign-in, sign-up and password endpoints are rate-limited (state kept in Postgres, so it works on
+serverless hosts too).
+
 ## Correcting titles
 
 Sources often get Portuguese titles wrong: Wikidata's "pt" label is frequently the Brazilian
@@ -62,9 +83,11 @@ Their page has a button that loads the rest of their data.
 ## Layout
 
 ```
-src/app/                  routes: / , /pesquisa, /livro/[slug], /bookbox, server actions
-src/components/           UI pieces (Cover, BookGrid, SearchBox, ImportButton)
-src/db/schema.ts          Drizzle schema (catalogue tables)
+src/app/                  routes: / , /pesquisa, /livro/[slug], /bookbox, /entrar, /conta,
+                          /estante, /admin, server actions; /api/auth/* is Better Auth
+src/components/           UI pieces (Cover, BookGrid, SearchBox, ImportButton, auth/, reading/, admin/)
+src/lib/auth.ts           Better Auth config (lib/session.ts has the page/action helpers)
+src/db/schema.ts          Drizzle schema (catalogue, accounts, reading status, reviews, overrides)
 src/lib/sources/          one client per external API
 src/lib/import/           importWork(): merges all sources and upserts in one transaction
 src/lib/data/catalogue.ts cached reads for pages ('use cache' + the "catalogue" tag)
@@ -96,3 +119,4 @@ drizzle/                  SQL migrations (0001 adds unaccent/pg_trgm for search)
 | `npm run db:studio` | Drizzle Studio |
 | `npm run import` / `seed` | import books |
 | `npm run curate` | apply [src/data/curation.ts](src/data/curation.ts) to the database |
+| `npm run make-admin -- email` | give an account the admin role |

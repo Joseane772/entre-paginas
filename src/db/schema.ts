@@ -1,20 +1,25 @@
 import { relations, sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
+  check,
+  date,
   index,
   integer,
   pgEnum,
   pgTable,
   primaryKey,
   real,
+  smallint,
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
 
 /*
  * Catalogue (milestone 1): works, authors, series, editions, adaptations.
- * Planned next (see docs/ROADMAP.md): users, reading status, ratings,
- * fidelity votes, discussions, taste profiles and BookBox subscriptions.
+ * Accounts (milestone 2): Better Auth tables, reading status, reviews, curation overrides.
+ * Planned next (see docs/ROADMAP.md): fidelity votes, discussions, taste profiles and
+ * BookBox subscriptions.
  */
 
 const timestamps = {
@@ -235,3 +240,156 @@ export const workAdaptationsRelations = relations(workAdaptations, ({ one }) => 
     references: [adaptations.id],
   }),
 }));
+
+// ---------------------------------------------------------------------------
+// Accounts (Better Auth). Field names follow Better Auth's core + admin plugin schema.
+
+export const user = pgTable("user", {
+  id: text().primaryKey(),
+  name: text().notNull(),
+  email: text().notNull().unique(),
+  emailVerified: boolean().notNull().default(false),
+  image: text(),
+  /** "user" | "admin" (Better Auth admin plugin). */
+  role: text().default("user"),
+  banned: boolean().default(false),
+  banReason: text(),
+  banExpires: timestamp({ withTimezone: true }),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
+export const session = pgTable(
+  "session",
+  {
+    id: text().primaryKey(),
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    token: text().notNull().unique(),
+    ipAddress: text(),
+    userAgent: text(),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    impersonatedBy: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index().on(t.userId)],
+);
+
+export const account = pgTable(
+  "account",
+  {
+    id: text().primaryKey(),
+    accountId: text().notNull(),
+    providerId: text().notNull(),
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    accessToken: text(),
+    refreshToken: text(),
+    idToken: text(),
+    accessTokenExpiresAt: timestamp({ withTimezone: true }),
+    refreshTokenExpiresAt: timestamp({ withTimezone: true }),
+    scope: text(),
+    password: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index().on(t.userId)],
+);
+
+export const verification = pgTable(
+  "verification",
+  {
+    id: text().primaryKey(),
+    identifier: text().notNull(),
+    value: text().notNull(),
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index().on(t.identifier)],
+);
+
+/** Better Auth's rate limiter state (database storage works on serverless hosts). */
+export const rateLimit = pgTable("rate_limit", {
+  id: text().primaryKey(),
+  key: text().notNull().unique(),
+  count: integer().notNull(),
+  lastRequest: bigint({ mode: "number" }).notNull(),
+});
+
+// ---------------------------------------------------------------------------
+// Reading
+
+export const readingState = pgEnum("reading_state", ["quero_ler", "a_ler", "lido"]);
+
+export const readingStatus = pgTable(
+  "reading_status",
+  {
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    workId: integer()
+      .notNull()
+      .references(() => works.id, { onDelete: "cascade" }),
+    state: readingState().notNull(),
+    startedOn: date(),
+    finishedOn: date(),
+    ...timestamps,
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.workId] }), index().on(t.workId), index().on(t.userId, t.state)],
+);
+
+/** One rating (and optional review) per reader per book. */
+export const reviews = pgTable(
+  "reviews",
+  {
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    workId: integer()
+      .notNull()
+      .references(() => works.id, { onDelete: "cascade" }),
+    rating: smallint().notNull(),
+    body: text(),
+    /** Hidden behind a click on the book page. */
+    spoilers: boolean().notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.workId] }),
+    index().on(t.workId),
+    check("rating_range", sql`${t.rating} BETWEEN 1 AND 5`),
+  ],
+);
+
+/** Who imported what, for the per-user import limit. */
+export const importEvents = pgTable(
+  "import_events",
+  {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    userId: text().references(() => user.id, { onDelete: "set null" }),
+    workId: integer().references(() => works.id, { onDelete: "set null" }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index().on(t.userId, t.createdAt)],
+);
+
+/**
+ * Corrections made by admins on the site. Same fields as src/data/curation.ts; these win over
+ * the file. Applied by every import.
+ */
+export const workOverrides = pgTable("work_overrides", {
+  workId: integer()
+    .primaryKey()
+    .references(() => works.id, { onDelete: "cascade" }),
+  title: text(),
+  originalTitle: text(),
+  synopsis: text(),
+  note: text(),
+  hideFromSeries: boolean().notNull().default(false),
+  updatedBy: text().references(() => user.id, { onDelete: "set null" }),
+  ...timestamps,
+});

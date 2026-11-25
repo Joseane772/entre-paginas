@@ -96,4 +96,3 @@ export const SERIES: Record<string, SeriesCuration> = {
 
 export const curatedWork = (qid?: string | null): WorkCuration => (qid && WORKS[qid]) || {};
 export const curatedSeriesName = (qid: string, fallback: string) => SERIES[qid]?.name ?? fallback;
-export const hiddenQids = () => Object.keys(WORKS).filter((q) => WORKS[q].hideFromSeries);

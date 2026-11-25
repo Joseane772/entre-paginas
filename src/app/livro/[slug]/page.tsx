@@ -5,7 +5,9 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { Suspense } from "react";
 import { BookGrid } from "@/components/BookGrid";
 import { Cover } from "@/components/Cover";
-import { ImportButton } from "@/components/ImportButton";
+import { AdminEditLink } from "@/components/admin/AdminEditLink";
+import { ImportGate } from "@/components/ImportGate";
+import { MyReading, Reviews } from "@/components/reading/ReaderPanels";
 import { getBook, getMoreByAuthors, getRedirect, getSlugsForPrerender, type BookPage, type BookSeries } from "@/lib/data/catalogue";
 import { editionLanguageLabel, KIND_LABEL } from "@/lib/labels";
 import { LIBRARY, SHOPS } from "@/lib/shops";
@@ -80,18 +82,24 @@ async function Book({ params }: Pick<PageProps<"/livro/[slug]">, "params">) {
             work.status !== "stub" && <p className="muted">Ainda não temos sinopse para este livro.</p>
           )}
           {work.editorNote && <p className="note">{work.editorNote}</p>}
+          <Suspense>
+            <AdminEditLink workId={work.id} />
+          </Suspense>
         </div>
       </header>
 
       {work.status === "stub" && (
         <div className="notice">
           <p>Por agora só sabemos o básico sobre este livro: o lugar na saga e o ano.</p>
-          <ImportButton
-            qid={work.wikidataId ?? undefined}
-            ol={work.wikidataId ? undefined : (work.openLibraryWorkId ?? undefined)}
-            label="Carregar edições e adaptações"
-            pendingLabel="A carregar…"
-          />
+          <Suspense>
+            <ImportGate
+              returnTo={`/livro/${work.slug}`}
+              qid={work.wikidataId ?? undefined}
+              ol={work.wikidataId ? undefined : (work.openLibraryWorkId ?? undefined)}
+              label="Carregar edições e adaptações"
+              pendingLabel="A carregar…"
+            />
+          </Suspense>
         </div>
       )}
 
@@ -99,6 +107,12 @@ async function Book({ params }: Pick<PageProps<"/livro/[slug]">, "params">) {
         {book.series.map((s) => (
           <ReadingOrder key={s.id} series={s} currentSlug={work.slug} />
         ))}
+        <Suspense fallback={<div className="panel skeleton" style={{ height: 220 }} />}>
+          <MyReading workId={work.id} slug={work.slug} />
+        </Suspense>
+        <Suspense fallback={<div className="panel skeleton" style={{ height: 220 }} />}>
+          <Reviews workId={work.id} />
+        </Suspense>
         {work.status !== "stub" && (
           <>
             <Adaptations book={book} />
