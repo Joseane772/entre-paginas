@@ -56,14 +56,33 @@ const staticOrigins = [
   ...(process.env.TRUSTED_ORIGINS ?? "").split(",").map((o) => o.trim().replace(/\/+$/, "")),
 ].filter((u): u is string => !!u);
 
+/**
+ * True for addresses only reachable on a local network: localhost, private IPv4 ranges,
+ * IPv6 loopback/link-local/unique-local, and .local names. IP literals and .local only, so a
+ * public domain pointed at a private IP (DNS rebinding) doesn't count.
+ */
+function isLocalNetworkHost(host: string) {
+  const name = host.replace(/:\d+$/, "").replace(/^\[|\]$/g, "").toLowerCase();
+  if (name === "localhost" || name.endsWith(".local") || name === "::1") return true;
+  const v4 = name.match(/^(\d{1,3})\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/);
+  if (v4) {
+    const [a, b] = [Number(v4[1]), Number(v4[2])];
+    return a === 10 || a === 127 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31);
+  }
+  return /^(fe80|fc|fd)[0-9a-f]*:/.test(name);
+}
+
 export const auth = betterAuth({
   appName: "Entre Páginas",
   baseURL,
-  // In development (`npm run dev`) the site is opened at whatever address `next dev` prints
-  // (localhost, 127.0.0.1, the LAN IP), so accept requests from the address they were made to.
+  // Besides the configured URL, accept requests made from the address they were sent to when
+  // that address is on the local network (another device at home opening http://192.168.1.20:3000),
+  // and in development from any address `next dev` is opened at. Same-origin only: a page on
+  // another site sends its own Origin and is still refused.
   trustedOrigins: async (request) => {
-    const host = process.env.NODE_ENV === "development" ? request?.headers.get("host") : null;
-    return host ? [...staticOrigins, `http://${host}`] : staticOrigins;
+    const host = request?.headers.get("host");
+    if (!host || (process.env.NODE_ENV !== "development" && !isLocalNetworkHost(host))) return staticOrigins;
+    return [...staticOrigins, `http://${host}`, `https://${host}`];
   },
   database: drizzleAdapter(db, {
     provider: "pg",

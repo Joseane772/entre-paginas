@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
       {state.sent ? (
         <p>Se existir uma conta com esse email, enviámos-lhe um link para escolher uma nova palavra-passe.</p>
       ) : (
-        <form onSubmit={submit} className="form" style={{ marginTop: 16 }}>
+        <form method="post" onSubmit={submit} className="form" style={{ marginTop: 16 }}>
           <label className="field">
             Email
             <input name="email" type="email" required autoComplete="email" />

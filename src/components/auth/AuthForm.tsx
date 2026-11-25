@@ -81,7 +81,7 @@ export function AuthForm({
         </>
       )}
 
-      <form onSubmit={submit} className="form" style={{ marginTop: google ? 0 : 16 }}>
+      <form method="post" onSubmit={submit} className="form" style={{ marginTop: google ? 0 : 16 }}>
         {signup && (
           <label className="field">
             Nome

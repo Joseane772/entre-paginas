@@ -93,7 +93,7 @@ DATA_USER_AGENT=EntrePaginas/0.1 (+https://livros.example.pt)
 | --- | --- | --- |
 | `PORT` | `3000` | Port the site listens on. |
 | `PUBLIC_URL` | `http://localhost:PORT` | The address people type to reach the site. It must match exactly, or sign-in is refused. |
-| `TRUSTED_ORIGINS` | none | Other addresses the site is also reached at, comma-separated (e.g. `http://192.168.1.20:3000`). |
+| `TRUSTED_ORIGINS` | none | Other addresses the site is also reached at, comma-separated (e.g. `http://livros.casa:3000`). Local-network IPs work without it. |
 | `ADMIN_EMAILS` | none | Comma-separated emails that become admin when they sign up. When it's empty, the first account becomes admin. |
 | `BETTER_AUTH_SECRET` | generated | Signs sign-in sessions. By default one is created on first start and kept in the `appdata` volume. Set your own (`openssl rand -base64 32`) if you plan to move the site to another machine. |
 | `IMPORTS_PER_HOUR` | `10` | How many books each reader can import per hour. Admins have no limit. |
@@ -110,23 +110,26 @@ for development.
 
 ## Using it from other devices on your network
 
-To open the site from a phone or another computer at home:
+Anyone on your home network can open the site and create their own account. Nothing needs
+setting up:
 
 1. Find your computer's local IP address:
    - **Windows:** run `ipconfig` and look for "IPv4 Address".
    - **macOS:** System Settings → Wi-Fi → Details.
-   - **Linux:** run `hostname -I`.
+   - **Linux:** run `ip -4 addr` (or `hostname -I` on most distributions).
 
    It usually looks like `192.168.1.20`.
-2. Add it to `.env`, keeping localhost working too:
+2. On the other device, open `http://192.168.1.20:3000` (with your IP), then **Entrar → Criar
+   conta**.
 
-   ```ini
-   TRUSTED_ORIGINS=http://192.168.1.20:3000
-   ```
+Sign-in and sign-up are accepted from the address the site was opened at when that address is
+a local-network IP (`192.168.x.x`, `10.x.x.x`, `172.16–31.x.x`), `localhost` or a `.local` name.
+Requests from other websites are still refused. For any other name, such as a hostname on your
+router or a VPN address, add it to `TRUSTED_ORIGINS` (e.g.
+`TRUSTED_ORIGINS=http://livros.casa:3000`).
 
-   Or, if everyone will use the IP address, set `PUBLIC_URL=http://192.168.1.20:3000`. Links in
-   password-reset emails use `PUBLIC_URL`.
-3. Run `docker compose up -d`, then open `http://192.168.1.20:3000` on the other device.
+Password-reset links use `PUBLIC_URL`. If everyone will use the IP address, set
+`PUBLIC_URL=http://192.168.1.20:3000` so those links work on other devices too.
 
 If it doesn't load, your firewall may be blocking port 3000. On Windows, allow "Docker Desktop
 Backend" when it asks, or add an inbound rule for TCP port 3000.
@@ -270,9 +273,10 @@ running, or isn't installed. Start it and try again. On Linux, either add yourse
 (or 5433). Pick another one in `.env`, for example `PORT=8080` or `DB_PORT=5434`, then run
 `docker compose up -d` again.
 
-**Sign-in or sign-up fails with "Invalid origin", or nothing happens.** You're opening the site at
-an address that isn't `PUBLIC_URL`. For example, you set nothing and are using an IP address, or
-you mixed up `http` and `https`. Add that address to `TRUSTED_ORIGINS`, or set `PUBLIC_URL` to it.
+**Sign-in or sign-up fails with "Este endereço do site não está autorizado".** You're opening
+the site at a name that is neither `PUBLIC_URL` nor a local-network address, for example a
+hostname from your router or a VPN. Add that address to `TRUSTED_ORIGINS`, or set `PUBLIC_URL`
+to it. Also check you didn't mix up `http` and `https`.
 
 **The build stops with "killed" or "out of memory".** The machine has less than about 2 GB free.
 On Docker Desktop, raise the memory limit in Settings → Resources. On a small server, add swap
