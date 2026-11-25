@@ -23,8 +23,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         <header className="site-header">
           <div className="wrap site-header-inner">
-            <Link href="/" className="wordmark">
-              Entre Páginas
+            <Link href="/" className="brand">
+              <Image src={logoIcon} alt="" width={44} height={44} priority className="brand-badge" />
+              <span className="wordmark">Entre Páginas</span>
             </Link>
             <nav aria-label="Principal" className="site-nav">
               <NavLink href="/" icon="home">
@@ -46,9 +47,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 <UserNav />
               </Suspense>
             </nav>
-            <Link href="/" className="brand-badge" aria-label="Entre Páginas: página inicial">
-              <Image src={logoIcon} alt="" width={44} height={44} priority />
-            </Link>
           </div>
         </header>
         <main className="wrap">{children}</main>

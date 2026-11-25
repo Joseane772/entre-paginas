@@ -103,6 +103,12 @@ main.wrap {
   gap: 16px;
   padding-block: 14px;
 }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
 .brand-badge {
   flex: none;
   display: block;
@@ -110,11 +116,6 @@ main.wrap {
   height: 44px;
   border-radius: 50%;
   box-shadow: var(--shadow);
-}
-.brand-badge img {
-  display: block;
-  width: 100%;
-  height: 100%;
 }
 .site-nav {
   margin-left: auto;
@@ -1027,8 +1028,8 @@ ol.saga a {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  .hero .cover {
-    width: 130px;
+  .hero .book {
+    width: 140px;
   }
   .result {
     grid-template-columns: 48px 1fr;
