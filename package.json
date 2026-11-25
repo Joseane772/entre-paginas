@@ -15,7 +15,9 @@
     "import": "tsx --env-file=.env scripts/import.ts",
     "seed": "tsx --env-file=.env scripts/import.ts --seed",
     "curate": "tsx --env-file=.env scripts/curate.ts",
-    "make-admin": "tsx --env-file=.env scripts/make-admin.ts"
+    "make-admin": "tsx --env-file=.env scripts/make-admin.ts",
+    "snapshot": "tsx scripts/snapshot.ts",
+    "db:load-snapshot": "tsx scripts/load-snapshot.ts"
   },
   "dependencies": {
     "better-auth": "1.7.20",

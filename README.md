@@ -16,7 +16,29 @@ The original concept is in [docs/idea.txt](docs/idea.txt). The clickable prototy
   Wikipédia (Portuguese synopses), TMDB (posters, pt-PT synopses; optional), Google Books
   (extra Portuguese editions; optional)
 
-## Getting started
+## Run it on your own computer (any OS)
+
+Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows, macOS) or
+Docker Engine (Linux), then in this folder:
+
+```bash
+docker compose up
+```
+
+Open http://localhost:3000. The first start builds the image (a few minutes) and loads a snapshot
+of the catalogue, so there are books straight away. The first account you create becomes admin.
+Everything is kept in Docker volumes between restarts. Stop it with `Ctrl+C`, or run
+`docker compose up -d` to keep it in the background and `docker compose down` to stop it.
+
+Options go in a `.env` file next to `docker-compose.yml` (see `.env.example`), e.g. `PORT=8080`,
+`ADMIN_EMAILS=...`, `TMDB_READ_TOKEN=...`. To reach it from other devices on your network, set
+`PUBLIC_URL=http://<your-computer's-ip>:3000`.
+
+## Deploying
+
+See [docs/DEPLOY.md](docs/DEPLOY.md) (Vercel + Neon, both on free plans).
+
+## Development
 
 ```bash
 npm install
@@ -120,3 +142,5 @@ drizzle/                  SQL migrations (0001 adds unaccent/pg_trgm for search)
 | `npm run import` / `seed` | import books |
 | `npm run curate` | apply [src/data/curation.ts](src/data/curation.ts) to the database |
 | `npm run make-admin -- email` | give an account the admin role |
+| `npm run snapshot` | refresh the catalogue snapshot loaded by `docker compose up` |
+| `npm run db:load-snapshot` | load that snapshot into an empty database (e.g. Neon) |

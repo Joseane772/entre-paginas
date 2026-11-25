@@ -1,6 +1,8 @@
 import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
-import { cacheLife, cacheTag } from "next/cache";
+import { cacheTag } from "next/cache";
+import { dbCacheLife, buildingWithoutDb } from "@/lib/cache-life";
 import { db } from "@/db";
+import { WORKS } from "@/data/curation";
 import {
   adaptations,
   authors,
@@ -9,6 +11,7 @@ import {
   seriesWorks,
   slugRedirects,
   workAdaptations,
+  workOverrides,
   workAuthors,
   works,
 } from "@/db/schema";
@@ -59,14 +62,19 @@ const cardColumns = {
 /** Fully imported books, newest import first. Only the first book of each series, to keep the shelf varied. */
 export async function getShelf(limit = 24): Promise<BookCard[]> {
   "use cache";
-  cacheLife("hours");
+  dbCacheLife("hours");
   cacheTag(CATALOGUE_TAG);
+  if (buildingWithoutDb) return []; // no database while the Docker image builds
+  const hidden = Object.keys(WORKS).filter((q) => WORKS[q].hideFromSeries);
   const rows = await db
     .select(cardColumns)
     .from(works)
     .where(
       and(
         eq(works.status, "full"),
+        // Appendices, short stories and the like aren't shelf material.
+        sql`coalesce(${works.wikidataId}, '') NOT IN ${hidden.length ? hidden : ["-"]}`,
+        sql`NOT EXISTS (SELECT 1 FROM ${workOverrides} o WHERE o.work_id = ${works.id} AND o.hide_from_series)`,
         sql`NOT EXISTS (
           SELECT 1 FROM ${seriesWorks} sw
           JOIN ${seriesWorks} first ON first.series_id = sw.series_id
@@ -83,8 +91,9 @@ export async function getShelf(limit = 24): Promise<BookCard[]> {
 /** Accent-insensitive search over titles, original titles, authors and series names. */
 export async function searchCatalogue(q: string): Promise<BookCard[]> {
   "use cache";
-  cacheLife("minutes");
+  dbCacheLife("minutes");
   cacheTag(CATALOGUE_TAG);
+  if (buildingWithoutDb) return []; // no database while the Docker image builds
   const term = q.trim();
   if (!term) return [];
   const escaped = term.replace(/[\\%_]/g, (c) => "\\" + c);
@@ -112,8 +121,9 @@ export async function searchCatalogue(q: string): Promise<BookCard[]> {
 
 export async function getSlugsForPrerender(limit = 50): Promise<string[]> {
   "use cache";
-  cacheLife("hours");
+  dbCacheLife("hours");
   cacheTag(CATALOGUE_TAG);
+  if (buildingWithoutDb) return [];
   try {
     const rows = await db
       .select({ slug: works.slug })
@@ -131,8 +141,9 @@ export async function getSlugsForPrerender(limit = 50): Promise<string[]> {
 /** Current slug for a work's old slug (titles get corrected, links shouldn't break). */
 export async function getRedirect(slug: string): Promise<string | null> {
   "use cache";
-  cacheLife("hours");
+  dbCacheLife("hours");
   cacheTag(CATALOGUE_TAG);
+  if (buildingWithoutDb) return null; // no database while the Docker image builds
   const [row] = await db
     .select({ slug: works.slug })
     .from(slugRedirects)
@@ -147,8 +158,9 @@ export type BookSeries = NonNullable<BookPage>["series"][number];
 
 export async function getBook(slug: string) {
   "use cache";
-  cacheLife("hours");
+  dbCacheLife("hours");
   cacheTag(CATALOGUE_TAG, `work:${slug}`);
+  if (buildingWithoutDb) return null; // no database while the Docker image builds
   return loadBook(slug);
 }
 
@@ -255,8 +267,9 @@ async function loadBook(slug: string) {
 /** Other fully imported books by the same authors. */
 export async function getMoreByAuthors(slug: string, limit = 6): Promise<BookCard[]> {
   "use cache";
-  cacheLife("hours");
+  dbCacheLife("hours");
   cacheTag(CATALOGUE_TAG);
+  if (buildingWithoutDb) return []; // no database while the Docker image builds
   const [w] = await db.select({ id: works.id }).from(works).where(eq(works.slug, slug));
   if (!w) return [];
   const rows = await db

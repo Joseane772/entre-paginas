@@ -1,3 +1,8 @@
+# Run the whole site on any machine with Docker:   docker compose up
+# Then open http://localhost:3000 (PORT=8080 docker compose up to use another port).
+#
+# For development, `npm run db:up` starts only the database (on localhost:5433).
+
 services:
   db:
     image: postgres:17-alpine
@@ -7,14 +12,44 @@ services:
       POSTGRES_PASSWORD: entrepaginas
       POSTGRES_DB: entrepaginas
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      # On first start (empty volume) Postgres loads this catalogue snapshot, so the site has
+      # books straight away. Regenerate with `npm run snapshot`.
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U entrepaginas"]
       interval: 2s
       timeout: 3s
-      retries: 20
+      retries: 30
+
+  app:
+    build: .
+    image: entre-paginas
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: postgres://entrepaginas:entrepaginas@db:5432/entrepaginas
+      BETTER_AUTH_URL: ${PUBLIC_URL:-http://localhost:${PORT:-3000}}
+      # Everything below is optional; values come from your shell or a .env file next to this one.
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      SMTP_URL: ${SMTP_URL:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      TMDB_READ_TOKEN: ${TMDB_READ_TOKEN:-}
+      GOOGLE_BOOKS_API_KEY: ${GOOGLE_BOOKS_API_KEY:-}
+      DATA_USER_AGENT: ${DATA_USER_AGENT:-EntrePaginas/0.1 (self-hosted)}
+      IMPORTS_PER_HOUR: ${IMPORTS_PER_HOUR:-10}
+    volumes:
+      - appdata:/data
 
 volumes:
   pgdata:
+  appdata:

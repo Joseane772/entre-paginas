@@ -1,6 +1,7 @@
 import "server-only";
 import { and, asc, avg, count, desc, eq, inArray } from "drizzle-orm";
-import { cacheLife, cacheTag } from "next/cache";
+import { cacheTag } from "next/cache";
+import { buildingWithoutDb, dbCacheLife } from "@/lib/cache-life";
 import { db } from "@/db";
 import { readingStatus, reviews, user, workAuthors, authors, works } from "@/db/schema";
 
@@ -29,8 +30,9 @@ export async function getMyReading(userId: string, workId: number) {
 /** Public reviews for a book: average, count and the latest ones. */
 export async function getReviews(workId: number) {
   "use cache";
-  cacheLife("hours");
+  dbCacheLife("hours");
   cacheTag(reviewsTag(workId));
+  if (buildingWithoutDb) return { count: 0, average: null, list: [] }; // Docker image build
   const [[summary], list] = await Promise.all([
     db
       .select({ n: count(), avg: avg(reviews.rating) })

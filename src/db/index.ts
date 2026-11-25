@@ -7,7 +7,14 @@ if (!url) throw new Error("DATABASE_URL is not set. Copy .env.example to .env.")
 
 // Reuse one pool across hot reloads in development.
 const globalForDb = globalThis as unknown as { pg?: ReturnType<typeof postgres> };
-const client = globalForDb.pg ?? postgres(url, { max: 10 });
+const client =
+  globalForDb.pg ??
+  postgres(url, {
+    // Serverless functions (Vercel) each hold their own pool: keep it small.
+    max: process.env.VERCEL ? 3 : 10,
+    // Transaction-mode poolers (Neon "-pooler", Supabase :6543) don't keep prepared statements.
+    prepare: !/-pooler\.|:6543\//.test(url),
+  });
 if (process.env.NODE_ENV !== "production") globalForDb.pg = client;
 
 export const db = drizzle(client, { schema, casing: "snake_case" });
