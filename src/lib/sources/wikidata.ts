@@ -61,10 +61,11 @@ export async function findWorkQid(opts: {
 
 /**
  * Films also carry P50 (author of the source), and edition items duplicate works.
- * Skip anything with a director, a TMDB id, or typed as an edition.
+ * Skip anything with a director, a TMDB id, or that is an edition/translation of another work.
  */
 const NOT_A_BOOK = (v: string) => `
       FILTER NOT EXISTS { ${v} wdt:P31 wd:Q3331189 }
+      FILTER NOT EXISTS { ${v} wdt:P629 ?_editionOf }
       FILTER NOT EXISTS { ${v} wdt:P57 ?_director }
       FILTER NOT EXISTS { ${v} wdt:P4947|wdt:P4983 ?_tmdb }`;
 
@@ -84,19 +85,20 @@ export type WdWork = {
 export async function getWork(qid: string): Promise<WdWork> {
   assertQid(qid);
   const rows = await sparql(`
-    SELECT ?labelPt ?labelEn ?origTitle ?date ?langCode ?ptwiki ?olw
+    SELECT ?labelPt ?labelEn ?labelMul ?origTitle ?origLang ?date ?langCode ?ptwiki ?olw
            ?author ?authorLabel ?authorOl ?series ?seriesLabel ?ord WHERE {
       BIND(wd:${qid} AS ?w)
       OPTIONAL { ?w rdfs:label ?labelPt FILTER(lang(?labelPt) = "pt") }
       OPTIONAL { ?w rdfs:label ?labelEn FILTER(lang(?labelEn) = "en") }
-      OPTIONAL { ?w wdt:P1476 ?origTitle }
+      OPTIONAL { ?w rdfs:label ?labelMul FILTER(lang(?labelMul) = "mul") }
+      OPTIONAL { ?w wdt:P1476 ?origTitle BIND(lang(?origTitle) AS ?origLang) }
       OPTIONAL { ?w wdt:P577 ?date }
       OPTIONAL { ?w wdt:P407 ?lang. ?lang wdt:P218 ?langCode }
       OPTIONAL { ?w wdt:P648 ?olw FILTER(STRENDS(?olw, "W")) }
       OPTIONAL { ?ptArticle schema:about ?w; schema:isPartOf <https://pt.wikipedia.org/>; schema:name ?ptwiki }
       OPTIONAL { ?w wdt:P50 ?author. OPTIONAL { ?author wdt:P648 ?authorOl } }
       OPTIONAL { ?w p:P179 ?st. ?st ps:P179 ?series. OPTIONAL { ?st pq:P1545 ?ord } }
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "pt,en". }
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "pt,mul,en". }
     }`);
   const first = <K extends string>(k: K) => rows.find((r) => r[k])?.[k];
   const years = rows.map((r) => year(r.date)).filter((y): y is number => !!y);
@@ -108,18 +110,34 @@ export async function getWork(qid: string): Promise<WdWork> {
     if (r.series && !series.has(r.series))
       series.set(r.series, { qid: r.series, name: r.seriesLabel, ordinal: r.ord });
   }
+  const labelEn = first("labelEn") ?? first("labelMul");
+  const originalLanguage = first("langCode");
   return {
     qid,
     labelPt: first("labelPt"),
-    labelEn: first("labelEn"),
-    originalTitle: first("origTitle"),
-    originalLanguage: first("langCode"),
+    labelEn,
+    originalTitle: pickOriginalTitle(rows, originalLanguage, labelEn),
+    originalLanguage,
     year: years.length ? Math.min(...years) : undefined,
     ptWikiTitle: first("ptwiki"),
     olWorkId: first("olw"),
     authors: [...authors.values()],
     series: [...series.values()],
   };
+}
+
+/**
+ * P1476 often holds the title in several languages (Dune Messiah has a Japanese one).
+ * Take the one in the book's own language, preferring the one that matches the English label.
+ */
+function pickOriginalTitle(rows: Record<string, string>[], lang?: string, labelEn?: string) {
+  const titles = [...new Map(rows.filter((r) => r.origTitle).map((r) => [r.origTitle, r.origLang])).entries()];
+  if (!titles.length) return undefined;
+  const inLang = lang ? titles.filter(([, l]) => l === lang) : [];
+  const pool = inLang.length ? inLang : lang ? [] : titles;
+  if (!pool.length) return undefined;
+  const want = labelEn ? normalize(labelEn) : undefined;
+  return (pool.find(([t]) => normalize(t) === want) ?? pool[0])[0];
 }
 
 export type WdSeriesMember = {
@@ -149,8 +167,8 @@ export async function getSeriesMembers(seriesQid: string): Promise<WdSeriesMembe
       OPTIONAL { ?st pq:P1545 ?ord }
       OPTIONAL { ?w wdt:P577 ?date }
       OPTIONAL { ?w wdt:P648 ?ol }
-      OPTIONAL { ?w rdfs:label ?labelEn FILTER(lang(?labelEn) = "en") }
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "pt,en". }
+      OPTIONAL { ?w rdfs:label ?labelEn FILTER(lang(?labelEn) IN ("en", "mul")) }
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "pt,mul,en". }
     }`);
   const byQid = new Map<string, WdSeriesMember>();
   for (const r of rows) {
@@ -229,7 +247,7 @@ export async function getAdaptations(workQid: string, seriesQids: string[] = [])
       OPTIONAL { ?a wdt:P4947 ?tmdbM }
       OPTIONAL { ?a wdt:P4983 ?tmdbT }
       OPTIONAL { ?a wdt:P57|wdt:P170|wdt:P178 ?credit }
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "pt,en". }
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "pt,mul,en". }
     }`);
 
   const grouped = new Map<string, { rows: Record<string, string>[] }>();

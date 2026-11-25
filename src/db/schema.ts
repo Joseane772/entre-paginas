@@ -77,6 +77,8 @@ export const works = pgTable(
     synopsisLanguage: text(),
     /** Where the synopsis came from (e.g. a Wikipédia article), for attribution. */
     synopsisSourceUrl: text(),
+    /** Short editorial note shown on the book page (e.g. "em Portugal saiu em dois volumes"). */
+    editorNote: text(),
     coverUrl: text(),
     subjects: text().array().notNull().default(sql`'{}'::text[]`),
     wikidataId: text().unique(),
@@ -101,6 +103,15 @@ export const workAuthors = pgTable(
   },
   (t) => [primaryKey({ columns: [t.workId, t.authorId] }), index().on(t.authorId)],
 );
+
+/** Old slugs of works whose title changed, so earlier links keep working. */
+export const slugRedirects = pgTable("slug_redirects", {
+  slug: text().primaryKey(),
+  workId: integer()
+    .notNull()
+    .references(() => works.id, { onDelete: "cascade" }),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
 
 export const series = pgTable("series", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),

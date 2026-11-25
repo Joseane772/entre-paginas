@@ -39,6 +39,23 @@ npm run import -- "the last wish" --series          # also fully import the rest
 From the site, searching shows Open Library results with an **Importar** button. Imports are
 idempotent: re-running one refreshes the same rows.
 
+## Correcting titles
+
+Sources often get Portuguese titles wrong: Wikidata's "pt" label is frequently the Brazilian
+title ("A Sociedade do Anel" instead of "A Irmandade do Anel"), and edition records are typed by
+hand. Corrections live in [src/data/curation.ts](src/data/curation.ts), keyed by Wikidata id:
+
+```ts
+Q208002: { title: "A Irmandade do Anel", source: "Europa-América; pt.wikipedia" },
+Q1751870: { title: "A Guerra dos Tronos", note: "Em Portugal ... em dois volumes ..." },
+Q334335: { hideFromSeries: true },               // appendix, not a volume
+```
+
+Every import applies them, so re-imports don't undo them. To apply them to the existing database
+without re-importing, run `npm run curate` and restart the server. When a title changes, the slug
+follows it and the old URL redirects. Check the title on a Portuguese bookshop (Wook, Bertrand) or
+the publisher before adding it.
+
 Books that are only known as part of a series are stored as `stub` works (title, year, position).
 Their page has a button that loads the rest of their data.
 
@@ -59,9 +76,9 @@ drizzle/                  SQL migrations (0001 adds unaccent/pg_trgm for search)
 
 - **PT vs BR editions** are told apart by ISBN group (972/989 = Portugal, 85/65 = Brazil), falling
   back to place of publication.
-- **Titles**: the Wikidata `pt` label is used only when it differs from the original title (it's
-  often just a copy of it). Otherwise the most common Portuguese edition title is used, then the
-  Portuguese Wikipédia article title.
+- **Titles**: a curated title wins. Otherwise the Wikidata `pt` label is used when it differs from
+  the original title (it's often just a copy of it), then the most common Portugal edition title
+  (cleaned of "Livro I"-style suffixes), then the Portuguese Wikipédia article title.
 - **Series** from Wikidata are cleaned up: sub-parts of volumes, unnumbered short stories and
   duplicate items are dropped.
 - Wikidata needs an identifying `User-Agent`. Set `DATA_USER_AGENT` in `.env` to something with a
@@ -78,3 +95,4 @@ drizzle/                  SQL migrations (0001 adds unaccent/pg_trgm for search)
 | `npm run db:migrate` | apply migrations |
 | `npm run db:studio` | Drizzle Studio |
 | `npm run import` / `seed` | import books |
+| `npm run curate` | apply [src/data/curation.ts](src/data/curation.ts) to the database |

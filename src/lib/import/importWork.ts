@@ -1,4 +1,4 @@
-import { and, eq, inArray, or, sql } from "drizzle-orm";
+import { and, eq, inArray, notInArray, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   adaptations,
@@ -6,6 +6,7 @@ import {
   editions,
   series,
   seriesWorks,
+  slugRedirects,
   workAdaptations,
   workAuthors,
   works,
@@ -16,7 +17,8 @@ import { getTmdbDetails } from "@/lib/sources/tmdb";
 import { getPtSummary } from "@/lib/sources/wikipedia";
 import { searchPortugueseVolumes } from "@/lib/sources/googlebooks";
 import { SourceError } from "@/lib/sources/http";
-import { normalize, portugueseRegion, slugify, toIso3 } from "@/lib/text";
+import { curatedSeriesName, curatedWork, hiddenQids } from "@/data/curation";
+import { cleanEditionTitle, normalize, portugueseRegion, slugify, toIso3 } from "@/lib/text";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Log = (msg: string) => void;
@@ -149,17 +151,22 @@ export async function importWork(input: ImportInput, log: Log = () => {}): Promi
   const ptPtEditions = ptEditions.filter((e) => e.region === "PT");
   const mostCommonTitle = (rows: typeof editionRows) => {
     const counts = new Map<string, number>();
-    for (const r of rows) counts.set(r.title, (counts.get(r.title) ?? 0) + 1);
+    for (const r of rows) {
+      const t = cleanEditionTitle(r.title);
+      counts.set(t, (counts.get(t) ?? 0) + 1);
+    }
     return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
   };
 
-  const originalTitle = wdWork?.originalTitle ?? olWork?.title ?? wdWork?.labelEn ?? null;
+  const curated = curatedWork(qid);
+  const originalTitle = curated.originalTitle ?? wdWork?.originalTitle ?? olWork?.title ?? wdWork?.labelEn ?? null;
   // Wikidata's "pt" label is often just the original title copied over ("Dune");
   // only trust it when it differs, otherwise prefer what Portuguese editions/Wikipédia call it.
   const sameAsOriginal = (t?: string) =>
     !!t && [originalTitle, wdWork?.labelEn].some((o) => o && normalize(o) === normalize(t));
   const ptWikiTitle = wdWork?.ptWikiTitle?.replace(/\s*\([^)]*\)$/, "");
   const title =
+    curated.title ??
     (wdWork?.labelPt && !sameAsOriginal(wdWork.labelPt) ? wdWork.labelPt : undefined) ??
     mostCommonTitle(ptPtEditions) ??
     ptWikiTitle ??
@@ -174,7 +181,9 @@ export async function importWork(input: ImportInput, log: Log = () => {}): Promi
   const olYear = olWork?.firstPublishDate?.match(/\d{4}/)?.[0];
   const firstPublishedYear = wdWork?.year ?? (olYear ? Number(olYear) : null);
 
-  const synopsis = ptSummary
+  const synopsis = curated.synopsis
+    ? { synopsis: curated.synopsis, synopsisLanguage: "pt", synopsisSourceUrl: null }
+    : ptSummary
     ? { synopsis: ptSummary.extract, synopsisLanguage: "pt", synopsisSourceUrl: ptSummary.url }
     : olWork?.description
       ? {
@@ -197,6 +206,7 @@ export async function importWork(input: ImportInput, log: Log = () => {}): Promi
         coverUrl,
         subjects: (olWork?.subjects ?? []).filter((s) => !s.includes(":")).slice(0, 20),
         ...synopsis,
+        editorNote: curated.note ?? null,
         status: "full",
         importedAt: new Date(),
       },
@@ -247,11 +257,13 @@ export async function importWork(input: ImportInput, log: Log = () => {}): Promi
     // Series and their members (members we haven't imported become stubs)
     const myTitles = new Set([title, wdWork?.labelEn, originalTitle].filter(Boolean).map((t) => normalize(t!)));
     for (const [i, s] of seriesInfo.entries()) {
-      const seriesId = await upsertSeries(tx, s.qid, s.name);
+      const seriesId = await upsertSeries(tx, s.qid, curatedSeriesName(s.qid, s.name));
       let myOrdinal = s.ordinal;
       const others: wd.WdSeriesMember[] = [];
       for (const m of seriesMembers[i]) {
-        if (m.qid === qid) {
+        if (curatedWork(m.qid).hideFromSeries) {
+          continue;
+        } else if (m.qid === qid) {
           myOrdinal ??= m.ordinal;
         } else if (myTitles.has(normalize(m.labelEn ?? m.title))) {
           // A duplicate Wikidata item for this same book: take its position, drop its stub.
@@ -261,13 +273,17 @@ export async function importWork(input: ImportInput, log: Log = () => {}): Promi
           others.push(m);
         }
       }
-      const entries = [{ workId, ordinal: myOrdinal }];
+      const entries = curated.hideFromSeries ? [] : [{ workId, ordinal: myOrdinal }];
       for (const m of others) {
         // Sequential (slug uniqueness). Stubs don't keep the OL id: Wikidata's OL links
         // are often stale or shared between items; the full import resolves it.
         const id = await upsertWork(tx, {
           qid: m.qid,
-          values: { title: m.title, firstPublishedYear: m.year ?? null },
+          values: {
+            title: curatedWork(m.qid).title ?? m.title,
+            firstPublishedYear: m.year ?? null,
+            editorNote: curatedWork(m.qid).note ?? null,
+          },
           stub: true,
         });
         entries.push({ workId: id, ordinal: m.ordinal });
@@ -279,7 +295,23 @@ export async function importWork(input: ImportInput, log: Log = () => {}): Promi
           .values({ seriesId, workId: e.workId, ...values })
           .onConflictDoUpdate({ target: [seriesWorks.seriesId, seriesWorks.workId], set: values });
       }
+      // Stubs that dropped out of the series (cleaned up on Wikidata) and hidden members.
+      // Fully imported books stay: their own import decides their series.
+      await tx.delete(seriesWorks).where(
+        and(
+          eq(seriesWorks.seriesId, seriesId),
+          entries.length ? notInArray(seriesWorks.workId, entries.map((e) => e.workId)) : undefined,
+          inArray(
+            seriesWorks.workId,
+            tx
+              .select({ id: works.id })
+              .from(works)
+              .where(or(eq(works.status, "stub"), inArray(works.wikidataId, hiddenQids()))),
+          ),
+        ),
+      );
     }
+    await deleteOrphanStubs(tx);
 
     const [w] = await tx.select({ slug: works.slug }).from(works).where(eq(works.id, workId));
     log(`guardado: ${title} → /livro/${w.slug}`);
@@ -335,6 +367,7 @@ async function upsertWork(
   if (existing) {
     // Never downgrade a fully imported book back to a stub.
     if (opts.stub && existing.status !== "stub") return existing.id;
+    await reslug(tx, existing.id, opts.values.title, opts.values.firstPublishedYear);
     await tx
       .update(works)
       .set({
@@ -358,6 +391,31 @@ async function upsertWork(
     })
     .returning({ id: works.id });
   return row.id;
+}
+
+/**
+ * Keep a work's slug in step with its title (stubs are often created with the English title).
+ * The old slug is kept as a redirect.
+ */
+export async function reslug(tx: Tx, workId: number, title: string, year?: number | null) {
+  const [w] = await tx.select({ slug: works.slug }).from(works).where(eq(works.id, workId));
+  const base = slugify(title);
+  if (!w || w.slug === base || w.slug.startsWith(base + "-")) return w?.slug;
+  const slug = await uniqueSlug(tx, works, base, year);
+  await tx.update(works).set({ slug }).where(eq(works.id, workId));
+  await tx.delete(slugRedirects).where(eq(slugRedirects.slug, slug));
+  await tx
+    .insert(slugRedirects)
+    .values({ slug: w.slug, workId })
+    .onConflictDoUpdate({ target: slugRedirects.slug, set: { workId } });
+  return slug;
+}
+
+/** Stubs only exist as members of a series; once in none, they go. */
+export async function deleteOrphanStubs(tx: Tx) {
+  await tx.execute(sql`
+    DELETE FROM ${works} w WHERE w.status = 'stub'
+      AND NOT EXISTS (SELECT 1 FROM ${seriesWorks} sw WHERE sw.work_id = w.id)`);
 }
 
 async function upsertAuthor(tx: Tx, a: { name: string; olId?: string; qid?: string }): Promise<number> {

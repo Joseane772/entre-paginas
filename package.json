@@ -13,7 +13,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "import": "tsx --env-file=.env scripts/import.ts",
-    "seed": "tsx --env-file=.env scripts/import.ts --seed"
+    "seed": "tsx --env-file=.env scripts/import.ts --seed",
+    "curate": "tsx --env-file=.env scripts/curate.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.4",

@@ -1,12 +1,12 @@
 /* eslint-disable @next/next/no-img-element -- TMDB posters */
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Suspense } from "react";
 import { BookGrid } from "@/components/BookGrid";
 import { Cover } from "@/components/Cover";
 import { ImportButton } from "@/components/ImportButton";
-import { getBook, getMoreByAuthors, getSlugsForPrerender, type BookPage, type BookSeries } from "@/lib/data/catalogue";
+import { getBook, getMoreByAuthors, getRedirect, getSlugsForPrerender, type BookPage, type BookSeries } from "@/lib/data/catalogue";
 import { editionLanguageLabel, KIND_LABEL } from "@/lib/labels";
 import { LIBRARY, SHOPS } from "@/lib/shops";
 import { toIso3 } from "@/lib/text";
@@ -41,7 +41,11 @@ export default function BookRoute(props: PageProps<"/livro/[slug]">) {
 async function Book({ params }: Pick<PageProps<"/livro/[slug]">, "params">) {
   const { slug } = await params;
   const book = await getBook(slug);
-  if (!book) notFound();
+  if (!book) {
+    const moved = await getRedirect(slug);
+    if (moved) permanentRedirect(`/livro/${moved}`);
+    notFound();
+  }
   const { work } = book;
   const byline = book.authors.map((a) => a.name).join(", ");
 
@@ -75,6 +79,7 @@ async function Book({ params }: Pick<PageProps<"/livro/[slug]">, "params">) {
           ) : (
             work.status !== "stub" && <p className="muted">Ainda não temos sinopse para este livro.</p>
           )}
+          {work.editorNote && <p className="note">{work.editorNote}</p>}
         </div>
       </header>
 

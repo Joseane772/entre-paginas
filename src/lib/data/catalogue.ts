@@ -7,6 +7,7 @@ import {
   editions,
   series,
   seriesWorks,
+  slugRedirects,
   workAdaptations,
   workAuthors,
   works,
@@ -125,6 +126,20 @@ export async function getSlugsForPrerender(limit = 50): Promise<string[]> {
     // No database at build time: render everything on demand.
     return [];
   }
+}
+
+/** Current slug for a work's old slug (titles get corrected, links shouldn't break). */
+export async function getRedirect(slug: string): Promise<string | null> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(CATALOGUE_TAG);
+  const [row] = await db
+    .select({ slug: works.slug })
+    .from(slugRedirects)
+    .innerJoin(works, eq(works.id, slugRedirects.workId))
+    .where(eq(slugRedirects.slug, slug))
+    .limit(1);
+  return row?.slug ?? null;
 }
 
 export type BookPage = Awaited<ReturnType<typeof loadBook>>;

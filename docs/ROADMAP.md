@@ -1,13 +1,14 @@
 # Roadmap
 
-## Milestone 1: catalogue with real data ✅ (in progress)
+## Milestone 1: catalogue with real data (in progress)
 
 - [x] Schema: works, authors, series (ordered), editions (PT/BR), adaptations
 - [x] Importers: Open Library, Wikidata, Wikipédia, TMDB (optional), Google Books (optional)
 - [x] Book page: synopsis, reading order, adaptations, where to buy, languages, Portuguese editions
 - [x] Search (accent-insensitive) with on-demand import from Open Library
-- [ ] Title curation: let an admin override a bad title or synopsis (some edition titles are messy,
-      e.g. "O Jogos Da Fome. Livro I"; some books have no Portuguese title on Wikidata yet)
+- [x] Title curation: checked-in overrides (`src/data/curation.ts`, `npm run curate`) for titles,
+      synopses, notes and series membership; slugs follow titles with redirects
+- [ ] Curate the rest of the catalogue as it grows; an admin screen for this comes with accounts (M2)
 - [ ] Show only the top adaptations by default; collapse games and minor ones (The Witcher has 13)
 - [ ] Series page (`/saga/[slug]`) and author page (`/autor/[slug]`)
 - [ ] Background refresh job (re-import stale books weekly)
@@ -18,6 +19,7 @@
 - Auth (Auth.js or Better Auth; email magic link + Google)
 - `users`, `reading_status` (quero ler / a ler / li, with dates), `ratings` (1–5 + review)
 - Protect and rate-limit on-demand imports (currently open to anyone)
+- Admin screen for curation (writes the same overrides as `src/data/curation.ts`, stored in the DB)
 - Community-added books (`works.status = 'pending'`) with a review queue
 
 ## Milestone 3: community

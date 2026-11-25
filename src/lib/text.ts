@@ -73,3 +73,35 @@ export function isbn10to13(isbn10: string): string | null {
   for (let i = 0; i < 12; i++) sum += Number(core[i]) * (i % 2 ? 3 : 1);
   return core + ((10 - (sum % 10)) % 10);
 }
+
+/** Words that stay lowercase inside a Portuguese title ("O Senhor dos Anéis"). */
+const SMALL_WORDS = new Set([
+  "a", "o", "as", "os", "e", "de", "do", "da", "dos", "das", "em", "no", "na", "nos", "nas",
+  "um", "uma", "ao", "aos", "à", "às", "com", "por", "para", "pelo", "pela", "sobre", "entre",
+]);
+
+/**
+ * Tidy a title taken from an edition record (these are typed by hand and messy):
+ * drop volume suffixes ("O Jogos Da Fome. Livro I", "Duna - Volume 1"), and use title case
+ * with lowercase small words ("O regresso do rei" -> "O Regresso do Rei").
+ * Words with capitals inside them (acronyms, "McCarthy") are left alone.
+ */
+export function cleanEditionTitle(raw: string): string {
+  let t = raw
+    .normalize("NFC")
+    .replace(/\s*[.,:;–—-]?\s*\(?\b(livro|volume|vol\.?|tomo|parte)\s+([ivxlc]+|\d+|[úu]nico)\b\.?\)?\s*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!t) return raw.trim();
+  let first = true;
+  t = t.replace(/[\p{L}\p{N}][\p{L}\p{M}\p{N}'’]*/gu, (word) => {
+    const isFirst = first;
+    first = false;
+    if (/\p{Lu}/u.test(word.slice(1))) return word; // "McCarthy", "IT"
+    const lower = word.toLowerCase();
+    if (!isFirst && SMALL_WORDS.has(lower)) return lower;
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+  });
+  // Capitalise again after a colon or dash ("Duna: o Messias" -> "Duna: O Messias").
+  return t.replace(/([:–—-]\s+)(\p{Ll})/gu, (_, sep, c) => sep + c.toUpperCase());
+}

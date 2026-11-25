@@ -352,6 +352,14 @@ main.wrap {
   color: var(--mute);
   margin-top: 8px;
 }
+.note {
+  max-width: 65ch;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--soft);
+  font-size: 0.92rem;
+}
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
