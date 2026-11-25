@@ -17,6 +17,7 @@ import { getTmdbDetails } from "@/lib/sources/tmdb";
 import { getPtSummary } from "@/lib/sources/wikipedia";
 import { searchPortugueseVolumes } from "@/lib/sources/googlebooks";
 import { SourceError } from "@/lib/sources/http";
+import { pickCover } from "@/lib/sources/covers";
 import { curatedSeriesName } from "@/data/curation";
 import { hiddenQids, loadCuration } from "./curation";
 import { cleanEditionTitle, normalize, portugueseRegion, slugify, toIso3 } from "@/lib/text";
@@ -176,11 +177,17 @@ export async function importWork(input: ImportInput, log: Log = () => {}): Promi
     mostCommonTitle(ptEditions) ??
     wdWork?.labelPt ??
     englishTitle;
-  const coverUrl =
-    ptPtEditions.find((e) => e.coverUrl)?.coverUrl?.replace("-M.jpg", "-L.jpg") ??
-    (olWork?.covers?.[0] ? ol.olCover(olWork.covers[0], "L") : null) ??
-    ptEditions.find((e) => e.coverUrl)?.coverUrl ??
-    null;
+  // Portugal editions first, then the work's own covers on Open Library, then Brazilian ones.
+  // Each candidate is downloaded and checked: sources sometimes attach a photo or banner.
+  const large = (u?: string | null) => u?.replace("-M.jpg", "-L.jpg");
+  const coverUrl = await pickCover(
+    [
+      ...ptPtEditions.map((e) => large(e.coverUrl)),
+      ...(olWork?.covers ?? []).slice(0, 4).map((c) => ol.olCover(c, "L")),
+      ...ptEditions.map((e) => large(e.coverUrl)),
+    ],
+    { log },
+  );
   const olYear = olWork?.firstPublishDate?.match(/\d{4}/)?.[0];
   const firstPublishedYear = wdWork?.year ?? (olYear ? Number(olYear) : null);
 

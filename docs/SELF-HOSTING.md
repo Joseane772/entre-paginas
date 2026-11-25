@@ -3,6 +3,8 @@
 You can run your own copy of the site on Windows, macOS or Linux. Docker runs the whole thing:
 the website and its Postgres database. You don't need Node.js or Postgres installed.
 
+*Em português: [ALOJAMENTO.md](ALOJAMENTO.md).*
+
 - [1. Install Docker](#1-install-docker)
 - [2. Get the code](#2-get-the-code)
 - [3. Start it](#3-start-it)

@@ -1,5 +1,8 @@
 # Entre Páginas
 
+> 🇵🇹 **Em português:** [LEIA-ME.md](LEIA-ME.md) · guia de alojamento:
+> [docs/ALOJAMENTO.md](docs/ALOJAMENTO.md)
+
 A Portuguese (pt-PT) book site where each book is the hub for everything around it: the series
 reading order, film/series/game adaptations, which editions exist in Portugal vs Brazil, and where
 to buy or borrow it. A BookBox subscription (a monthly surprise book chosen from your reading
@@ -142,7 +145,9 @@ Q1751870: { title: "A Guerra dos Tronos", note: "Em Portugal ... em dois volumes
 Q334335: { hideFromSeries: true },               // appendix, not a volume
 ```
 
-Every import applies them, so re-imports don't undo them. To apply them to the existing database
+Every import applies them, so re-imports don't undo them. Covers are checked too: each candidate
+is downloaded and skipped if it isn't portrait-shaped like a book (a photo, a banner, a blank
+placeholder); `npm run check-covers` checks the whole catalogue. To apply them to the existing database
 without re-importing, run `npm run curate` and restart the server. When a title changes, the slug
 follows it and the old URL redirects. Check the title on a Portuguese bookshop (Wook, Bertrand) or
 the publisher before adding it.
@@ -192,6 +197,7 @@ drizzle/                  SQL migrations (0001 adds unaccent/pg_trgm for search)
 | `npm run db:studio` | Drizzle Studio |
 | `npm run import` / `seed` | import books |
 | `npm run curate` | apply [src/data/curation.ts](src/data/curation.ts) to the database |
+| `npm run check-covers` | check every cover's proportions (`-- --fix` picks the next good one) |
 | `npm run make-admin -- email` | give an account the admin role |
 | `npm run snapshot` | refresh the catalogue snapshot loaded by `docker compose up` |
 | `npm run db:load-snapshot` | load that snapshot into an empty database (e.g. Neon) |

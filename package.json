@@ -17,7 +17,8 @@
     "curate": "tsx --env-file=.env scripts/curate.ts",
     "make-admin": "tsx --env-file=.env scripts/make-admin.ts",
     "snapshot": "tsx scripts/snapshot.ts",
-    "db:load-snapshot": "tsx scripts/load-snapshot.ts"
+    "db:load-snapshot": "tsx scripts/load-snapshot.ts",
+    "check-covers": "tsx --env-file=.env scripts/check-covers.ts"
   },
   "dependencies": {
     "better-auth": "1.7.20",
