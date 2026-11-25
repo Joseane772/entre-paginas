@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Figtree, Fredoka } from "next/font/google";
 import { Suspense } from "react";
 import { UserNav } from "@/components/auth/UserNav";
 import { NavLink } from "@/components/NavLink";
+import logoIcon from "../../public/logo-icon.png";
 import "./globals.css";
 
 const sans = Figtree({ variable: "--font-sans", subsets: ["latin"], weight: ["400", "500", "600"] });
@@ -44,6 +46,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 <UserNav />
               </Suspense>
             </nav>
+            <Link href="/" className="brand-badge" aria-label="Entre Páginas: página inicial">
+              <Image src={logoIcon} alt="" width={44} height={44} priority />
+            </Link>
           </div>
         </header>
         <main className="wrap">{children}</main>
