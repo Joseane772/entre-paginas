@@ -417,3 +417,16 @@ export async function recommendFor(userId: string, limit = 24) {
   }
   return { hasSignals, profile, items: [...top, ...rest].slice(0, limit) };
 }
+
+/** Books of one genre (first books of sagas first, then by year), for /genero/[slug]. */
+export async function getBooksByGenre(genre?: Genre): Promise<BookCard[]> {
+  const features = await getBookFeatures();
+  return features
+    .filter((f) => !genre || f.genres.includes(genre))
+    .sort(
+      (a, b) =>
+        Number(a.sagas.some((s) => s.pos > 0)) - Number(b.sagas.some((s) => s.pos > 0)) ||
+        (a.year ?? 9999) - (b.year ?? 9999),
+    )
+    .map(toCard);
+}

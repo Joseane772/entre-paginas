@@ -74,7 +74,7 @@ async function OpenLibraryResults({ q }: { q: string }) {
         const slug = imported.get(id);
         return (
           <li key={id} className="result">
-            <Cover title={d.title} url={d.cover_i ? olCover(d.cover_i, "S") : null} size="sm" />
+            <Cover title={d.title} url={d.cover_i ? olCover(d.cover_i, "S") : null} size="sm" flat />
             <div>
               <span className="result-title">{d.title}</span>
               <small>

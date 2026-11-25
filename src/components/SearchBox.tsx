@@ -1,4 +1,5 @@
 import Form from "next/form";
+import { Icon } from "./icons";
 
 /** Plain GET form to /pesquisa: works without JavaScript, and next/form makes it a client navigation. */
 export function SearchBox({ defaultValue = "", autoFocus = false }: { defaultValue?: string; autoFocus?: boolean }) {
@@ -14,8 +15,8 @@ export function SearchBox({ defaultValue = "", autoFocus = false }: { defaultVal
         autoFocus={autoFocus}
         required
       />
-      <button className="btn btn-solid" type="submit">
-        Pesquisar
+      <button className="search-btn" type="submit" aria-label="Pesquisar">
+        <Icon name="search" size={22} />
       </button>
     </Form>
   );

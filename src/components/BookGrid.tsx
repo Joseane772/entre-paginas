@@ -3,9 +3,16 @@ import type { BookCard } from "@/lib/data/catalogue";
 import { Cover } from "./Cover";
 
 /** `note` adds a highlighted line under the author (e.g. why it's recommended). */
-export function BookGrid({ books }: { books: (BookCard & { note?: string })[] }) {
+export function BookGrid({
+  books,
+  layout = "grid",
+}: {
+  books: (BookCard & { note?: string })[];
+  /** "row" lays the books out in one line, for <BookRow>. */
+  layout?: "grid" | "row";
+}) {
   return (
-    <ul className="book-grid">
+    <ul className={layout === "row" ? "book-strip" : "book-grid"}>
       {books.map((b) => (
         <li key={b.slug}>
           <Link href={`/livro/${b.slug}`} className="book-card">

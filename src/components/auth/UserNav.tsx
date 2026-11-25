@@ -1,18 +1,32 @@
-import Link from "next/link";
+import { NavLink } from "@/components/NavLink";
 import { getSession, isAdmin } from "@/lib/session";
 
 /** Header links that depend on who's signed in. Render inside <Suspense>. */
 export async function UserNav() {
   const session = await getSession();
-  if (!session) return <Link href="/entrar">Entrar</Link>;
+  if (!session)
+    return (
+      <NavLink href="/entrar" icon="user">
+        Entrar
+      </NavLink>
+    );
+  const first = session.user.name.trim().split(/\s+/)[0] || "Conta";
   return (
-    <span className="user-nav">
-      <Link href="/recomendacoes">Para ti</Link>
-      <Link href="/estante">A minha estante</Link>
-      {isAdmin(session) && <Link href="/admin">Admin</Link>}
-      <Link href="/conta" title="A minha conta">
-        {session.user.name.split(" ")[0]}
-      </Link>
-    </span>
+    <>
+      <NavLink href="/recomendacoes" icon="sparkle">
+        Para ti
+      </NavLink>
+      <NavLink href="/estante" icon="shelf">
+        Estante
+      </NavLink>
+      {isAdmin(session) && (
+        <NavLink href="/admin" icon="gear" className="nav-admin">
+          Admin
+        </NavLink>
+      )}
+      <NavLink href="/conta" avatar={first[0].toUpperCase()}>
+        {first}
+      </NavLink>
+    </>
   );
 }

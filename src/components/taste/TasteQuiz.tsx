@@ -115,7 +115,7 @@ export function TasteQuiz({ initial, books }: { initial: TasteAnswers; books: Bo
         {shown.map((b) => (
           <li key={b.id}>
             <button type="button" aria-pressed={loved.includes(b.id)} onClick={() => toggle(b.id)} title={b.authors}>
-              <Cover title={b.title} author={b.authors} url={b.coverUrl} size="sm" />
+              <Cover title={b.title} author={b.authors} url={b.coverUrl} size="sm" flat />
               <span>{b.title}</span>
             </button>
           </li>

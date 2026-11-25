@@ -97,3 +97,10 @@ export function answerLabel(key: Q["key"], value: string): string {
   const q = QUESTIONS.find((x) => x.key === key);
   return (q?.options as Record<string, string> | undefined)?.[value] ?? value;
 }
+
+/** URL slug for a genre page (/genero/ficcao-cientifica) and back. */
+export const genreSlug = (g: Genre) => g.replace(/_/g, "-");
+export const genreFromSlug = (slug: string): Genre | null => {
+  const g = slug.replace(/-/g, "_");
+  return g in GENRES ? (g as Genre) : null;
+};

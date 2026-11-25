@@ -8,6 +8,15 @@ profile) is planned as a core feature.
 The original concept is in [docs/idea.txt](docs/idea.txt). The clickable prototype is in
 [docs/prototype/](docs/prototype/), and [docs/ROADMAP.md](docs/ROADMAP.md) has what comes next.
 
+## Design credit
+
+The visual direction (rounded cards, illustrated genre books, books drawn with a binding and a
+ribbon bookmark, carousels with "Ver tudo") is inspired by
+[Book Store Concept](https://dribbble.com/shots/19444133-Book-Store-Concept) by Toma on Dribbble.
+The colours are Entre Páginas' own, and the illustrations are drawn in code
+([src/components/GenreIcon.tsx](src/components/GenreIcon.tsx), the `.book` styles in
+[src/app/globals.css](src/app/globals.css)); no assets from the shot are used.
+
 ## Stack
 
 - Next.js 16 (App Router, Cache Components) + TypeScript
