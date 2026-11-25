@@ -19,24 +19,25 @@ The original concept is in [docs/idea.txt](docs/idea.txt). The clickable prototy
 ## Run it on your own computer (any OS)
 
 Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows, macOS) or
-Docker Engine (Linux), then in this folder:
+Docker Engine (Linux), then:
 
 ```bash
-docker compose up
+git clone https://github.com/Joseane772/entre-paginas.git
+cd entre-paginas
+docker compose up -d
 ```
 
 Open http://localhost:3000. The first start builds the image (a few minutes) and loads a snapshot
 of the catalogue, so there are books straight away. The first account you create becomes admin.
-Everything is kept in Docker volumes between restarts. Stop it with `Ctrl+C`, or run
-`docker compose up -d` to keep it in the background and `docker compose down` to stop it.
 
-Options go in a `.env` file next to `docker-compose.yml` (see `.env.example`), e.g. `PORT=8080`,
-`ADMIN_EMAILS=...`, `TMDB_READ_TOKEN=...`. To reach it from other devices on your network, set
-`PUBLIC_URL=http://<your-computer's-ip>:3000`.
+**[docs/SELF-HOSTING.md](docs/SELF-HOSTING.md)** is the full guide: settings, access from other
+devices, your own domain with automatic HTTPS (`docker-compose.https.yml`), email, Google sign-in,
+updates, backups and troubleshooting.
 
-## Deploying
+## Deploying to Vercel
 
-See [docs/DEPLOY.md](docs/DEPLOY.md) (Vercel + Neon, both on free plans).
+See [docs/DEPLOY.md](docs/DEPLOY.md) (Vercel + Neon, both on free plans). Self-hosting with
+Docker (above) works on any server too.
 
 ## Development
 

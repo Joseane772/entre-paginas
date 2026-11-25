@@ -31,6 +31,8 @@ COPY --from=build /app/drizzle ./drizzle
 COPY --from=build /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
 COPY --from=build /app/node_modules/postgres ./node_modules/postgres
 COPY docker/migrate.mjs docker/entrypoint.sh ./docker/
+# In case the files were checked out with Windows line endings.
+RUN sed -i 's/\r$//' docker/entrypoint.sh docker/migrate.mjs
 USER app
 VOLUME /data
 EXPOSE 3000

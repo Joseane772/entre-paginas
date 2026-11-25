@@ -1,0 +1,32 @@
+# HTTPS on your own domain, with a free Let's Encrypt certificate (Caddy gets and renews it).
+#
+#   1. Point your domain's DNS (an A/AAAA record) at this server, and open ports 80 and 443.
+#   2. Put DOMAIN=livros.example.pt in the .env file next to docker-compose.yml.
+#   3. docker compose -f docker-compose.yml -f docker-compose.https.yml up -d
+#
+# The site is then only reachable through https://DOMAIN (port 3000 is no longer published).
+# Full guide: docs/SELF-HOSTING.md
+
+services:
+  app:
+    ports: !reset []
+    environment:
+      BETTER_AUTH_URL: https://${DOMAIN:?Set DOMAIN in .env to your domain name}
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    command: caddy reverse-proxy --from ${DOMAIN} --to app:3000
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddydata:/data
+      - caddyconfig:/config
+
+volumes:
+  caddydata:
+  caddyconfig:

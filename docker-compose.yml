@@ -1,5 +1,6 @@
 # Run the whole site on any machine with Docker:   docker compose up
 # Then open http://localhost:3000 (PORT=8080 docker compose up to use another port).
+# Full guide: docs/SELF-HOSTING.md. HTTPS on your own domain: docker-compose.https.yml.
 #
 # For development, `npm run db:up` starts only the database (on localhost:5433).
 
@@ -12,7 +13,8 @@ services:
       POSTGRES_PASSWORD: entrepaginas
       POSTGRES_DB: entrepaginas
     ports:
-      - "127.0.0.1:5433:5432"
+      # Only reachable from this computer. Change with DB_PORT if 5433 is taken.
+      - "127.0.0.1:${DB_PORT:-5433}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       # On first start (empty volume) Postgres loads this catalogue snapshot, so the site has
@@ -39,6 +41,7 @@ services:
       # Everything below is optional; values come from your shell or a .env file next to this one.
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
       ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      TRUSTED_ORIGINS: ${TRUSTED_ORIGINS:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       SMTP_URL: ${SMTP_URL:-}

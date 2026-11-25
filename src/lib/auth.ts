@@ -38,9 +38,12 @@ export const auth = betterAuth({
     process.env.BETTER_AUTH_URL ??
     vercelUrl(process.env.VERCEL_PROJECT_PRODUCTION_URL) ??
     vercelUrl(process.env.VERCEL_URL),
-  trustedOrigins: [vercelUrl(process.env.VERCEL_URL), vercelUrl(process.env.VERCEL_BRANCH_URL)].filter(
-    (u): u is string => !!u,
-  ),
+  // Other addresses the site is reached at (e.g. a LAN IP), comma-separated in TRUSTED_ORIGINS.
+  trustedOrigins: [
+    vercelUrl(process.env.VERCEL_URL),
+    vercelUrl(process.env.VERCEL_BRANCH_URL),
+    ...(process.env.TRUSTED_ORIGINS ?? "").split(",").map((o) => o.trim().replace(/\/+$/, "")),
+  ].filter((u): u is string => !!u),
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
