@@ -8,6 +8,7 @@ import { Cover } from "@/components/Cover";
 import { AdminEditLink } from "@/components/admin/AdminEditLink";
 import { ImportGate } from "@/components/ImportGate";
 import { MyReading, Reviews } from "@/components/reading/ReaderPanels";
+import { SimilarBooks, SimilarVotePanel } from "@/components/taste/SimilarBooks";
 import { getBook, getMoreByAuthors, getRedirect, getSlugsForPrerender, type BookPage, type BookSeries } from "@/lib/data/catalogue";
 import { editionLanguageLabel, KIND_LABEL } from "@/lib/labels";
 import { LIBRARY, SHOPS } from "@/lib/shops";
@@ -128,6 +129,17 @@ async function Book({ params }: Pick<PageProps<"/livro/[slug]">, "params">) {
           </>
         )}
       </div>
+
+      {work.status !== "stub" && (
+        <>
+          <Suspense fallback={<div className="skeleton" style={{ height: 240, marginTop: 28 }} />}>
+            <SimilarBooks workId={work.id} />
+          </Suspense>
+          <Suspense>
+            <SimilarVotePanel workId={work.id} slug={work.slug} />
+          </Suspense>
+        </>
+      )}
 
       <MoreByAuthors slug={work.slug} names={byline} />
     </article>

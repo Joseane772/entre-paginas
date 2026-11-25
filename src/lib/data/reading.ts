@@ -3,7 +3,7 @@ import { and, asc, avg, count, desc, eq, inArray } from "drizzle-orm";
 import { cacheTag } from "next/cache";
 import { buildingWithoutDb, dbCacheLife } from "@/lib/cache-life";
 import { db } from "@/db";
-import { readingStatus, reviews, user, workAuthors, authors, works } from "@/db/schema";
+import { readingStatus, reviews, similarityVotes, tasteProfiles, user, workAuthors, authors, works } from "@/db/schema";
 
 export const reviewsTag = (workId: number) => `reviews:${workId}`;
 
@@ -93,7 +93,7 @@ export async function getShelves(userId: string) {
 
 /** All of a user's data, for the "download my data" button (GDPR art. 20). */
 export async function exportUserData(userId: string) {
-  const [[u], status, revs] = await Promise.all([
+  const [[u], status, revs, [taste], votes] = await Promise.all([
     db
       .select({ id: user.id, name: user.name, email: user.email, createdAt: user.createdAt })
       .from(user)
@@ -122,6 +122,18 @@ export async function exportUserData(userId: string) {
       .from(reviews)
       .innerJoin(works, eq(works.id, reviews.workId))
       .where(eq(reviews.userId, userId)),
+    db.select().from(tasteProfiles).where(eq(tasteProfiles.userId, userId)),
+    db
+      .select({ workA: similarityVotes.workA, workB: similarityVotes.workB, createdAt: similarityVotes.createdAt })
+      .from(similarityVotes)
+      .where(eq(similarityVotes.userId, userId)),
   ]);
-  return { exportedAt: new Date().toISOString(), account: u, readingStatus: status, reviews: revs };
+  return {
+    exportedAt: new Date().toISOString(),
+    account: u,
+    readingStatus: status,
+    reviews: revs,
+    tasteProfile: taste ?? null,
+    similarBookVotes: votes,
+  };
 }

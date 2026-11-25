@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { count, eq, gt, sql } from "drizzle-orm";
 import { Suspense } from "react";
 import { db } from "@/db";
-import { importEvents, readingStatus, reviews, user, workOverrides, works } from "@/db/schema";
+import { importEvents, readingStatus, reviews, similarityVotes, tasteProfiles, user, workOverrides, works } from "@/db/schema";
 import { requireAdminPage } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Administração", robots: { index: false } };
@@ -18,7 +18,7 @@ export default function AdminHome() {
 async function Overview() {
   await requireAdminPage("/admin");
   const n = async (q: Promise<{ n: number }[]>) => (await q)[0].n;
-  const [users, full, stubs, statuses, revs, overrides, imports] = await Promise.all([
+  const [users, full, stubs, statuses, revs, overrides, imports, profiles, votes] = await Promise.all([
     n(db.select({ n: count() }).from(user)),
     n(db.select({ n: count() }).from(works).where(eq(works.status, "full"))),
     n(db.select({ n: count() }).from(works).where(eq(works.status, "stub"))),
@@ -26,6 +26,8 @@ async function Overview() {
     n(db.select({ n: count() }).from(reviews)),
     n(db.select({ n: count() }).from(workOverrides)),
     n(db.select({ n: count() }).from(importEvents).where(gt(importEvents.createdAt, sql`now() - interval '24 hours'`))),
+    n(db.select({ n: count() }).from(tasteProfiles)),
+    n(db.select({ n: count() }).from(similarityVotes)),
   ]);
   const stats: [string, number][] = [
     ["Leitores", users],
@@ -35,6 +37,8 @@ async function Overview() {
     ["Opiniões", revs],
     ["Correções feitas no site", overrides],
     ["Importações nas últimas 24 h", imports],
+    ["Questionários de gostos respondidos", profiles],
+    ["Votos de livros parecidos", votes],
   ];
   return (
     <section className="panel">

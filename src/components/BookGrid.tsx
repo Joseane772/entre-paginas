@@ -2,7 +2,8 @@ import Link from "next/link";
 import type { BookCard } from "@/lib/data/catalogue";
 import { Cover } from "./Cover";
 
-export function BookGrid({ books }: { books: BookCard[] }) {
+/** `note` adds a highlighted line under the author (e.g. why it's recommended). */
+export function BookGrid({ books }: { books: (BookCard & { note?: string })[] }) {
   return (
     <ul className="book-grid">
       {books.map((b) => (
@@ -14,6 +15,7 @@ export function BookGrid({ books }: { books: BookCard[] }) {
               {b.authors}
               {b.year ? `, ${b.year}` : ""}
             </span>
+            {b.note && <span className="book-card-note">{b.note}</span>}
           </Link>
         </li>
       ))}

@@ -83,6 +83,44 @@ Password-reset emails go through `SMTP_URL`. Without it, the link is printed in 
 Sign-in, sign-up and password endpoints are rate-limited (state kept in Postgres, so it works on
 serverless hosts too).
 
+## Questionnaire and recommendations
+
+Signed-in readers answer a short questionnaire at `/questionario`. It has the 7 prototype questions
+(genres, format, pace, sagas or standalones, adaptations, language, BookBox surprise), then an
+optional step to pick up to 10 books they loved. Answers are stored in `taste_profiles` and can be
+changed any time. **Para ti** (`/recomendacoes`, plus a row on the home page) lists books with the
+reasons each one was picked.
+
+Recommendations come from a **weighted similarity between books**
+([src/lib/similarity.ts](src/lib/similarity.ts)). Each signal gives a value from 0 to 1, and is
+multiplied by its weight:
+
+| Signal | Weight | Source |
+| --- | --- | --- |
+| Readers' votes ("este livro é parecido com…") | 6 | `similarity_votes` |
+| Genres in common | 3 | Open Library subjects mapped to the questionnaire genres ([src/lib/genres.ts](src/lib/genres.ts)) |
+| Subjects in common | 3 | Open Library subjects |
+| Same author | 2.5 | catalogue |
+| Readers who liked one also liked the other | 2 | 4–5 star ratings and questionnaire picks |
+| Same saga | 1.5 | catalogue |
+| Published close together | 0.5 | catalogue |
+
+Readers vote on a book page, under **Livros parecidos**. A pair's votes only count once at
+least `MIN_VOTES` (2) readers agree, and reach their full weight at `FULL_VOTES` (6). After that,
+a pair readers agree on outweighs everything the metadata says. To tune the system, change the
+weights and thresholds in that file.
+
+A reader's score for each unread book is:
+
+- **plus** how much they liked each book (questionnaire pick or 5 stars = 1, 4 stars = 0.7,
+  read = 0.4, reading = 0.3, want to read = 0.2) × similarity to it;
+- **minus** similarity to books they rated 1–2 stars;
+- **plus** questionnaire adjustments: preferred genres, first books of sagas (or standalones),
+  adaptations, and a Portuguese or Brazilian edition, depending on the preferred language.
+
+A book from the middle of a saga is only suggested once the book before it is read. The format,
+pace and BookBox answers are stored for the BookBox and don't affect recommendations yet.
+
 ## Correcting titles
 
 Sources often get Portuguese titles wrong: Wikidata's "pt" label is frequently the Brazilian
@@ -114,6 +152,9 @@ src/db/schema.ts          Drizzle schema (catalogue, accounts, reading status, r
 src/lib/sources/          one client per external API
 src/lib/import/           importWork(): merges all sources and upserts in one transaction
 src/lib/data/catalogue.ts cached reads for pages ('use cache' + the "catalogue" tag)
+src/lib/data/recommend.ts book features, "Livros parecidos" and personal recommendations
+src/lib/similarity.ts     similarity weights (tune recommendations here)
+src/lib/taste.ts          questionnaire questions and answers
 scripts/                  CLI import and seed list
 drizzle/                  SQL migrations (0001 adds unaccent/pg_trgm for search)
 ```

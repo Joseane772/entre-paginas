@@ -37,8 +37,9 @@
 
 ## Milestone 4: BookBox (core business)
 
-- Taste questionnaire (from the prototype) → `taste_profiles`
-  (genres, format, pace, series vs standalone, adaptations, language, surprise preference)
+- [x] Taste questionnaire (from the prototype) → `taste_profiles`
+  (genres, format, pace, series vs standalone, adaptations, language, surprise preference,
+  plus books the reader loved)
 - Exclusion list built from reading status ("li") so nobody gets a book they've read
 - Plans: Independente (one-off), Plano Mensal (subscription), Presente (gift)
 - Stripe Checkout + Billing (subscriptions, gift codes), webhooks → `subscriptions`, `orders`
@@ -46,10 +47,15 @@
   manual override; `box_shipments` with stock and tracking
 - Shipping in Portugal (CTT etc.), VAT on books (6% in PT)
 
-## Milestone 5: recommendations
+## Milestone 5: recommendations (started)
 
-- "Leitores com gostos parecidos" from reading status + ratings (start with item-item similarity)
-- Same signals feed BookBox curation
+- [x] Weighted item-item similarity: genres, subjects, author, saga, era, readers' "parecido com"
+      votes (count from 2 votes) and co-likes; "Livros parecidos" on each book page
+- [x] "Para ti": personal recommendations from the questionnaire, shelves and ratings, with reasons
+- [ ] "Não me interessa" on a recommendation, and "não é parecido" votes
+- [ ] Precompute features and pair scores in a table once the catalogue reaches thousands of books
+- [ ] Use format and pace answers once editions record e-book/audiobook availability
+- [ ] Same signals feed BookBox curation
 
 ## Open questions
 

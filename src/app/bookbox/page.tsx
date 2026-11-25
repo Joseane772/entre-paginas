@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = { title: "BookBox" };
 
@@ -19,6 +20,9 @@ export default function BookBoxPage() {
           A BookBox ainda está em preparação. Vai usar o teu perfil de leitura (géneros, língua, sagas ou
           livros únicos) e o que já leste para escolher o livro de cada mês.
         </p>
+        <Link className="btn" href="/questionario">
+          Responder ao questionário de gostos
+        </Link>
       </div>
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
         {PLANS.map((p) => (

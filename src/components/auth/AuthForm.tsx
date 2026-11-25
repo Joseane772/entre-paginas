@@ -12,6 +12,8 @@ const MESSAGES: Record<string, string> = {
   PASSWORD_TOO_SHORT: "A palavra-passe tem de ter pelo menos 8 caracteres.",
   INVALID_EMAIL: "Este email não parece válido.",
   BANNED_USER: "Esta conta foi suspensa.",
+  INVALID_ORIGIN:
+    "Este endereço do site não está autorizado a criar contas nem a entrar. Abre o site pelo endereço configurado (por exemplo http://localhost:3000), ou junta este endereço a TRUSTED_ORIGINS.",
 };
 export const authError = (e?: { code?: string; message?: string; status?: number } | null) =>
   !e

@@ -18,8 +18,8 @@ import {
 /*
  * Catalogue (milestone 1): works, authors, series, editions, adaptations.
  * Accounts (milestone 2): Better Auth tables, reading status, reviews, curation overrides.
- * Planned next (see docs/ROADMAP.md): fidelity votes, discussions, taste profiles and
- * BookBox subscriptions.
+ * Recommendations: taste profiles (questionnaire) and readers' "similar book" votes.
+ * Planned next (see docs/ROADMAP.md): fidelity votes, discussions and BookBox subscriptions.
  */
 
 const timestamps = {
@@ -393,3 +393,50 @@ export const workOverrides = pgTable("work_overrides", {
   updatedBy: text().references(() => user.id, { onDelete: "set null" }),
   ...timestamps,
 });
+
+/**
+ * Answers to the reading-taste questionnaire (keys from src/lib/taste.ts). Feeds the
+ * recommendations now and the BookBox curation later.
+ */
+export const tasteProfiles = pgTable("taste_profiles", {
+  userId: text()
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  genres: text().array().notNull().default(sql`'{}'::text[]`),
+  format: text(),
+  pace: text(),
+  seriesPref: text(),
+  adaptationsPref: text(),
+  language: text(),
+  boxPref: text(),
+  /** Books the reader picked as ones they loved, in the questionnaire. */
+  lovedWorkIds: integer().array().notNull().default(sql`'{}'::integer[]`),
+  ...timestamps,
+});
+
+/**
+ * "Este livro é parecido com..." votes: one per reader per pair. The pair is stored with the
+ * smaller work id first, so (a, b) and (b, a) are the same vote. Enough votes on a pair raise
+ * its weight in src/lib/similarity.ts.
+ */
+export const similarityVotes = pgTable(
+  "similarity_votes",
+  {
+    userId: text()
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    workA: integer()
+      .notNull()
+      .references(() => works.id, { onDelete: "cascade" }),
+    workB: integer()
+      .notNull()
+      .references(() => works.id, { onDelete: "cascade" }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.workA, t.workB] }),
+    index().on(t.workA, t.workB),
+    index().on(t.workB),
+    check("ordered_pair", sql`${t.workA} < ${t.workB}`),
+  ],
+);

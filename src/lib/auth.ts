@@ -32,18 +32,39 @@ const google =
 
 export const googleEnabled = !!google;
 
+const baseURL =
+  process.env.BETTER_AUTH_URL ??
+  vercelUrl(process.env.VERCEL_PROJECT_PRODUCTION_URL) ??
+  vercelUrl(process.env.VERCEL_URL);
+
+/** localhost, 127.0.0.1 and [::1] are the same machine, so the site URL works with any of them. */
+const LOOPBACK = ["localhost", "127.0.0.1", "[::1]"];
+function loopbackAliases(url?: string) {
+  try {
+    const u = new URL(url ?? "");
+    return LOOPBACK.includes(u.hostname) ? LOOPBACK.map((h) => `${u.protocol}//${h}${u.port ? `:${u.port}` : ""}`) : [];
+  } catch {
+    return [];
+  }
+}
+
+const staticOrigins = [
+  vercelUrl(process.env.VERCEL_URL),
+  vercelUrl(process.env.VERCEL_BRANCH_URL),
+  ...loopbackAliases(baseURL),
+  // Other addresses the site is reached at (e.g. a LAN IP), comma-separated in TRUSTED_ORIGINS.
+  ...(process.env.TRUSTED_ORIGINS ?? "").split(",").map((o) => o.trim().replace(/\/+$/, "")),
+].filter((u): u is string => !!u);
+
 export const auth = betterAuth({
   appName: "Entre Páginas",
-  baseURL:
-    process.env.BETTER_AUTH_URL ??
-    vercelUrl(process.env.VERCEL_PROJECT_PRODUCTION_URL) ??
-    vercelUrl(process.env.VERCEL_URL),
-  // Other addresses the site is reached at (e.g. a LAN IP), comma-separated in TRUSTED_ORIGINS.
-  trustedOrigins: [
-    vercelUrl(process.env.VERCEL_URL),
-    vercelUrl(process.env.VERCEL_BRANCH_URL),
-    ...(process.env.TRUSTED_ORIGINS ?? "").split(",").map((o) => o.trim().replace(/\/+$/, "")),
-  ].filter((u): u is string => !!u),
+  baseURL,
+  // In development (`npm run dev`) the site is opened at whatever address `next dev` prints
+  // (localhost, 127.0.0.1, the LAN IP), so accept requests from the address they were made to.
+  trustedOrigins: async (request) => {
+    const host = process.env.NODE_ENV === "development" ? request?.headers.get("host") : null;
+    return host ? [...staticOrigins, `http://${host}`] : staticOrigins;
+  },
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {

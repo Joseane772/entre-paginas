@@ -7,6 +7,7 @@ export async function UserNav() {
   if (!session) return <Link href="/entrar">Entrar</Link>;
   return (
     <span className="user-nav">
+      <Link href="/recomendacoes">Para ti</Link>
       <Link href="/estante">A minha estante</Link>
       {isAdmin(session) && <Link href="/admin">Admin</Link>}
       <Link href="/conta" title="A minha conta">

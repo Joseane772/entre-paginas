@@ -10,7 +10,7 @@ import { createWriteStream } from "node:fs";
 import { pipeline } from "node:stream/promises";
 import { createGzip } from "node:zlib";
 
-const PRIVATE = ['"user"', "session", "account", "verification", "rate_limit", "reading_status", "reviews", "import_events", "work_overrides"];
+const PRIVATE = ['"user"', "session", "account", "verification", "rate_limit", "reading_status", "reviews", "import_events", "work_overrides", "taste_profiles", "similarity_votes"];
 
 const dump = spawn(
   "docker",

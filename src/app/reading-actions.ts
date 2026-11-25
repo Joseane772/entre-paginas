@@ -5,6 +5,7 @@ import { updateTag } from "next/cache";
 import { db } from "@/db";
 import { readingStatus, reviews } from "@/db/schema";
 import { reviewsTag, type ReadingStateValue } from "@/lib/data/reading";
+import { SIMILARITY_TAG } from "@/lib/data/recommend";
 import { getSession } from "@/lib/session";
 
 export type ActionResult = { ok?: boolean; error?: string };
@@ -67,6 +68,7 @@ export async function saveReview(workId: number, form: FormData): Promise<Action
     });
   await setReadingState(workId, "lido");
   updateTag(reviewsTag(workId));
+  updateTag(SIMILARITY_TAG); // ratings feed "quem gostou de X também gostou de Y"
   return { ok: true };
 }
 
@@ -75,5 +77,6 @@ export async function deleteReview(workId: number): Promise<ActionResult> {
   if (!userId) return { error: "Entra na tua conta." };
   await db.delete(reviews).where(and(eq(reviews.userId, userId), eq(reviews.workId, workId)));
   updateTag(reviewsTag(workId));
+  updateTag(SIMILARITY_TAG); // ratings feed "quem gostou de X também gostou de Y"
   return { ok: true };
 }
