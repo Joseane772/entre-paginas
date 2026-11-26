@@ -5,6 +5,10 @@ tudo: o site e a base de dados Postgres. Não precisas de instalar Node.js nem P
 
 *English version: [SELF-HOSTING.md](SELF-HOSTING.md).*
 
+> **Nunca usaste um terminal?** O [COMO-INSTALAR.md](../COMO-INSTALAR.md) explica tudo passo a
+> passo, sem comandos: basta fazer duplo clique em **Iniciar-Windows**, **Iniciar-Mac** ou
+> **iniciar-linux.sh**. Este guia é para quem quer mais controlo.
+
 - [1. Instalar o Docker](#1-instalar-o-docker)
 - [2. Obter o código](#2-obter-o-código)
 - [3. Arrancar](#3-arrancar)
@@ -53,8 +57,11 @@ terminal nessa pasta:
 ## 3. Arrancar
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
+
+(Ou faz duplo clique em **Iniciar-Windows.bat**, **Iniciar-Mac.command** ou **iniciar-linux.sh**,
+que fazem o mesmo, esperam pelo site e abrem o browser.)
 
 Da primeira vez demora 3 a 10 minutos, porque a imagem é construída no teu computador. O comando
 termina quando tudo estiver a funcionar. A partir daí, arrancar demora segundos.

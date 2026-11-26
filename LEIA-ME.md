@@ -11,7 +11,10 @@ protótipo em [docs/prototype/](docs/prototype/) e o que vem a seguir em
 
 ## Pôr a funcionar no teu computador (qualquer sistema)
 
-Instala o [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows, macOS) ou o
+> **Nunca fizeste nada disto?** Segue o **[COMO-INSTALAR.md](COMO-INSTALAR.md)**: instalar um
+> programa, transferir uma pasta e fazer duplo clique em **Iniciar**, com cada passo explicado.
+
+Para quem já usa Docker: instala o [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows, macOS) ou o
 Docker Engine (Linux) e corre:
 
 ```bash

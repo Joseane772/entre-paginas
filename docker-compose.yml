@@ -4,6 +4,10 @@
 #
 # For development, `npm run db:up` starts only the database (on localhost:5433).
 
+# Fixed project name: the data (Docker volumes) stays attached to it, so renaming the folder or
+# unzipping a new version elsewhere still finds your accounts and books.
+name: entre-paginas
+
 services:
   db:
     image: postgres:17-alpine

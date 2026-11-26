@@ -1,7 +1,7 @@
 # Entre Páginas
 
-> 🇵🇹 **Em português:** [LEIA-ME.md](LEIA-ME.md) · guia de alojamento:
-> [docs/ALOJAMENTO.md](docs/ALOJAMENTO.md)
+> 🇵🇹 **Em português:** [LEIA-ME.md](LEIA-ME.md) · **instalar sem saber nada de informática:
+> [COMO-INSTALAR.md](COMO-INSTALAR.md)** · guia de alojamento: [docs/ALOJAMENTO.md](docs/ALOJAMENTO.md)
 
 A Portuguese (pt-PT) book site where each book is the hub for everything around it: the series
 reading order, film/series/game adaptations, which editions exist in Portugal vs Brazil, and where

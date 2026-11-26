@@ -5,3 +5,7 @@
 *.gz binary
 *.png binary
 *.ico binary
+# Start/stop scripts for people who just double-click: Windows needs CRLF, Mac/Linux need LF.
+# -text keeps git from converting them (including in GitHub's "Download ZIP").
+*.bat -text
+*.command text eol=lf

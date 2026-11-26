@@ -3,7 +3,8 @@
 You can run your own copy of the site on Windows, macOS or Linux. Docker runs the whole thing:
 the website and its Postgres database. You don't need Node.js or Postgres installed.
 
-*Em português: [ALOJAMENTO.md](ALOJAMENTO.md).*
+*Em português: [ALOJAMENTO.md](ALOJAMENTO.md). Step-by-step guide for complete beginners, in
+Portuguese: [COMO-INSTALAR.md](../COMO-INSTALAR.md).*
 
 - [1. Install Docker](#1-install-docker)
 - [2. Get the code](#2-get-the-code)
@@ -52,8 +53,11 @@ that folder:
 ## 3. Start it
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
+
+(Or double-click **Iniciar-Windows.bat**, **Iniciar-Mac.command** or **iniciar-linux.sh**: they do
+the same, check Docker is running, wait for the site and open it in the browser.)
 
 The first time takes 3–10 minutes, because the image builds on your machine. The command
 returns once everything has started. After that, starting again takes a few seconds.
